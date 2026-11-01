@@ -326,3 +326,40 @@ describe("Relatórios e filtros", () => {
     expect(listarPublicacoes(ctx.donoId, { qualidade: "sem_qualis" }, null)).toHaveLength(1);
   });
 });
+
+describe("Possível duplicata: mesclar, manter ou ligar como versões", () => {
+  it("mescla levando custos e campos vazios", async () => {
+    const { mesclarPublicacoes, descartarDuplicata } = await import("@/lib/publicacoes");
+    const { possiveisDuplicatas } = await import("@/lib/filtros");
+    const ctx = await novoAmbiente();
+    const a = await criarPublicacao(ctx, artigo(ctx));
+    const b = await criarPublicacao(ctx, artigo(ctx, { titulo: "Cuidados de enfermagem na sepse: revisão integrativa.", volume: "7", doi: "10.1234/x" }), { ignorarDuplicidade: true });
+    expect(possiveisDuplicatas(ctx.donoId)).toHaveLength(1);
+    mesclarPublicacoes(ctx, a, b);
+    const p = obterPublicacao(ctx.donoId, a)!;
+    expect(p.volume).toBe("7");
+    expect(p.doi).toBe("10.1234/x");
+    expect(p.lancamentos).toHaveLength(4);
+    expect(listarPublicacoes(ctx.donoId, {}, null)).toHaveLength(1);
+    const c = await criarPublicacao(ctx, artigo(ctx, { titulo: "Cuidados de enfermagem na sepse - revisão integrativa" }), { ignorarDuplicidade: true });
+    expect(possiveisDuplicatas(ctx.donoId)).toHaveLength(1);
+    descartarDuplicata(ctx, a, c);
+    expect(possiveisDuplicatas(ctx.donoId)).toHaveLength(0);
+  });
+});
+
+describe("Dados de exemplo", () => {
+  it("carregam e são apagados sem afetar o resto", async () => {
+    const { carregarDadosExemplo, apagarDadosExemplo, temDadosExemplo } = await import("@/lib/exemplo");
+    const ctx = await novoAmbiente();
+    await criarPublicacao(ctx, artigo(ctx, { titulo: "Minha publicação real" }));
+    const n = await carregarDadosExemplo(ctx);
+    expect(n).toBeGreaterThan(8);
+    expect(temDadosExemplo(ctx.donoId)).toBe(true);
+    for (const chave of ["custos", "submissoes", "coautores", "artigos", "anais", "relatos", "livros", "jornais", "indicadores", "qualidade", "referencias"])
+      expect(gerarRelatorio(chave, ctx.donoId, {}, {}, "Enfermagem")).not.toBeNull();
+    expect(listarPublicacoes(ctx.donoId, { secao: "submissoes" }, null).length).toBeGreaterThanOrEqual(3);
+    apagarDadosExemplo(ctx.donoId);
+    expect(listarPublicacoes(ctx.donoId, {}, null).map((p) => p.titulo)).toEqual(["Minha publicação real"]);
+  });
+});

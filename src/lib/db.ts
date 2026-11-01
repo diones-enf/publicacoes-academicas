@@ -76,12 +76,14 @@ function limpar(params: unknown[]): Params {
   });
 }
 
+// O SQLite do Node devolve objetos sem protótipo; as telas precisam de objetos comuns.
 export function todos<T = Linha>(sql: string, ...params: unknown[]): T[] {
-  return db().prepare(sql).all(...limpar(params)) as T[];
+  return db().prepare(sql).all(...limpar(params)).map((r) => ({ ...r })) as T[];
 }
 
 export function um<T = Linha>(sql: string, ...params: unknown[]): T | undefined {
-  return db().prepare(sql).get(...limpar(params)) as T | undefined;
+  const r = db().prepare(sql).get(...limpar(params));
+  return r ? ({ ...r } as T) : undefined;
 }
 
 export function executar(sql: string, ...params: unknown[]): { id: number; alteradas: number } {

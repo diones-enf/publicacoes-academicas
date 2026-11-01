@@ -7,11 +7,10 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "dev": "next dev -p 3000",
+    "iniciar": "next build && next start -H 127.0.0.1 -p 3000",
+    "start": "next start -H 127.0.0.1 -p 3000",
+    "dev": "next dev -H 127.0.0.1 -p 3000",
     "build": "next build",
-    "start": "next start -p 3000",
-    "iniciar": "next build && next start -p 3000",
-    "exemplo": "node --experimental-strip-types scripts/dados-exemplo.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

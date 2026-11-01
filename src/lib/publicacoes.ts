@@ -302,7 +302,13 @@ async function prepararTaxas(d: DadosPublicacao) {
         moeda: t.moeda,
         data_pagamento: t.data_pagamento,
         data_vencimento: t.data_vencimento,
-        competencia: t.competencia,
+        // Sem competência informada: mês do pagamento; senão, o mês da submissão
+        // (taxa de submissão) ou do aceite/publicação (APC).
+        competencia:
+          t.competencia ||
+          (t.data_pagamento
+            ? null
+            : ((tipo === TIPO_TAXA_SUBMISSAO ? d.data_submissao : (d.data_aceite ?? d.data_publicacao)) ?? d.data_publicacao ?? d.data_submissao ?? null)?.slice(0, 7) ?? null),
         pagador: t.pagador,
         parte_autor: t.parte_autor,
       }),
@@ -747,13 +753,68 @@ export function mesclarDadosExternos(ctx: Contexto, id: number, m: Metadados): {
 
 // ---------- Leitura ----------
 
-export interface PublicacaoCompleta {
+export interface LinhaPublicacao {
   id: number;
-  [k: string]: unknown;
+  titulo: string;
+  tipo_id: number;
+  subtipo_id: number | null;
+  status: string;
+  data_submissao: string | null;
+  data_aceite: string | null;
+  data_publicacao: string | null;
+  ano: number | null;
+  volume: string | null;
+  numero: string | null;
+  paginas: string | null;
+  idioma: string | null;
+  doi: string | null;
+  isbn: string | null;
+  issn: string | null;
+  link: string | null;
+  area_tematica: string | null;
+  palavras_chave: string | null;
+  resumo: string | null;
+  observacoes: string | null;
+  veiculo_id: number | null;
+  evento_id: number | null;
+  editora: string | null;
+  edicao: string | null;
+  cidade: string | null;
+  livro_titulo: string | null;
+  organizadores: string | null;
+  modalidade: string | null;
+  premiacao: string | null;
+  instituicao: string | null;
+  registro: string | null;
+  papel_autor: string | null;
+  id_submissao: string | null;
+  link_sistema: string | null;
+  rodada_revisao: number | null;
+  prazo_resposta: string | null;
+  editor_responsavel: string | null;
+  taxa_submissao_nao_sei: number;
+  taxa_publicacao_nao_sei: number;
+  selo_novo: number;
+  ultima_movimentacao: string | null;
+  criado_em: string;
+  atualizado_em: string;
+  tipo_nome: string;
+  tipo_chave: string;
+  subtipo_nome: string | null;
+  veiculo_nome: string | null;
+  veiculo_issn: string | null;
+  veiculo_eissn: string | null;
+  veiculo_editora: string | null;
+  veiculo_tipo: string | null;
+  evento_nome: string | null;
+  evento_edicao: string | null;
+  evento_cidade: string | null;
+  evento_data: string | null;
+  evento_instituicao: string | null;
 }
 
 export function obterPublicacao(donoId: number, id: number, areaQualisRef: string | null = null) {
-  const p = um<Record<string, unknown> & { id: number; veiculo_id: number | null; status: string }>(
+  const p = um<LinhaPublicacao>(
     `SELECT p.*, t.nome AS tipo_nome, t.chave AS tipo_chave, s.nome AS subtipo_nome,
             v.nome AS veiculo_nome, v.issn AS veiculo_issn, v.eissn AS veiculo_eissn, v.editora AS veiculo_editora, v.tipo AS veiculo_tipo,
             e.nome AS evento_nome, e.edicao AS evento_edicao, e.cidade AS evento_cidade, e.data AS evento_data,
@@ -809,4 +870,72 @@ export function indiceCadastrados(donoId: number) {
     "SELECT id, doi, titulo, ano FROM publicacao WHERE dono_id = ?",
     donoId,
   );
+}
+
+// ---------- Possíveis duplicatas ----------
+
+export function descartarDuplicata(ctx: Contexto, a: number, b: number) {
+  const n = um<{ n: number }>("SELECT COUNT(*) n FROM publicacao WHERE id IN (?, ?) AND dono_id = ?", a, b, ctx.donoId);
+  if (n?.n !== 2) throw new ErroValidacao("Publicação não encontrada.");
+  const [x, y] = a < b ? [a, b] : [b, a];
+  executar("INSERT OR IGNORE INTO duplicata_descartada (a_id, b_id) VALUES (?, ?)", x, y);
+}
+
+/**
+ * Mescla duas publicações: a primeira fica, recebe os campos que estavam
+ * vazios nela, os custos, o histórico e os vínculos da segunda, que é apagada.
+ */
+export function mesclarPublicacoes(ctx: Contexto, manterId: number, removerId: number): number {
+  if (manterId === removerId) throw new ErroValidacao("Escolha duas publicações diferentes.");
+  const a = um<Record<string, unknown>>("SELECT * FROM publicacao WHERE id = ? AND dono_id = ?", manterId, ctx.donoId);
+  const b = um<Record<string, unknown>>("SELECT * FROM publicacao WHERE id = ? AND dono_id = ?", removerId, ctx.donoId);
+  if (!a || !b) throw new ErroValidacao("Publicação não encontrada.");
+  transacao(() => {
+    const mud: Record<string, unknown> = {};
+    for (const c of [...CAMPOS_TEXTO, "ano", "subtipo_id", "veiculo_id", "evento_id", "rodada_revisao"] as string[]) {
+      if (vazio(a[c]) && !vazio(b[c])) mud[c] = b[c];
+    }
+    // o DOI da que sai é liberado antes de ser copiado
+    executar("UPDATE publicacao SET doi = NULL WHERE id = ?", removerId);
+    const campos = Object.keys(mud);
+    if (campos.length)
+      executar(
+        `UPDATE publicacao SET ${campos.map((c) => `${c} = ?`).join(", ")}, atualizado_em = ? WHERE id = ?`,
+        ...campos.map((c) => mud[c]),
+        agora(),
+        manterId,
+      );
+    const autoresA = um<{ n: number }>("SELECT COUNT(*) n FROM autoria WHERE publicacao_id = ?", manterId)?.n ?? 0;
+    if (!autoresA) executar("UPDATE autoria SET publicacao_id = ? WHERE publicacao_id = ?", manterId, removerId);
+    for (const t of ["lancamento_custo", "origem_campo", "tentativa_submissao", "lembrete"])
+      executar(`UPDATE ${t} SET publicacao_id = ? WHERE publicacao_id = ?`, manterId, removerId);
+    executar(
+      "UPDATE historico_status SET publicacao_id = ?, desfazer_json = NULL WHERE publicacao_id = ?",
+      manterId,
+      removerId,
+    );
+    for (const r of todos<{ a_id: number; b_id: number }>(
+      "SELECT a_id, b_id FROM versao_relacionada WHERE a_id = ? OR b_id = ?",
+      removerId,
+      removerId,
+    )) {
+      const outro = r.a_id === removerId ? r.b_id : r.a_id;
+      if (outro !== manterId) {
+        const [x, y] = outro < manterId ? [outro, manterId] : [manterId, outro];
+        executar("INSERT OR IGNORE INTO versao_relacionada (a_id, b_id) VALUES (?, ?)", x, y);
+      }
+    }
+    executar("DELETE FROM publicacao WHERE id = ?", removerId);
+    inserir("historico_alteracao", {
+      dono_id: ctx.donoId,
+      tabela: "publicacao",
+      registro_id: manterId,
+      campo: "(mesclagem)",
+      valor_antigo: String(b.titulo),
+      valor_novo: `mesclada com a publicação ${removerId}`,
+      usuario_id: ctx.usuarioId,
+    });
+    atualizarBusca(manterId);
+  });
+  return manterId;
 }

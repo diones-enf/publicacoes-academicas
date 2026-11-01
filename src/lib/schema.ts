@@ -311,6 +311,13 @@ export const MIGRACOES: string[] = [
     UNIQUE (dono_id, tipo, publicacao_id, lancamento_id, data_alvo, antecedencia)
   );
 
+  -- Pares que o usuário disse que NÃO são duplicatas ("manter os dois").
+  CREATE TABLE duplicata_descartada (
+    a_id INTEGER NOT NULL REFERENCES publicacao(id) ON DELETE CASCADE,
+    b_id INTEGER NOT NULL REFERENCES publicacao(id) ON DELETE CASCADE,
+    PRIMARY KEY (a_id, b_id)
+  );
+
   CREATE TABLE visao_salva (
     id INTEGER PRIMARY KEY,
     dono_id INTEGER NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,

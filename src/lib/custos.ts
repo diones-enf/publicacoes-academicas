@@ -134,7 +134,7 @@ export function listarLancamentos(donoId: number, f: FiltroCustos = {}) {
     p.push(f.ate);
   }
   if (f.situacao === "pago") onde.push("l.data_pagamento IS NOT NULL");
-  if (f.situacao === "pendente") onde.push("l.data_pagamento IS NULL");
+  if (f.situacao === "pendente") onde.push("l.data_pagamento IS NULL AND l.valor > 0");
   if (f.pagador) {
     onde.push("l.pagador = ?");
     p.push(f.pagador);

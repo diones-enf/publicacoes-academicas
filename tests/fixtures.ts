@@ -12,8 +12,8 @@ export const crossrefWork = {
     "container-title": ["Revista Gaúcha de Enfermagem"],
     ISSN: ["0102-6933", "1983-1447"],
     "issn-type": [
-      { value: "0102-6933", type: "print" },
-      { value: "1983-1447", type: "electronic" },
+      { value: "0102-6933", type: "print" as const },
+      { value: "1983-1447", type: "electronic" as const },
     ],
     publisher: "FapUNIFESP (SciELO)",
     issued: { "date-parts": [[2023, 5, 15]] },

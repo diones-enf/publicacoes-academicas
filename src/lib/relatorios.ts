@@ -119,7 +119,10 @@ function relatorioCustos(donoId: number, f: Filtros, o: OpcoesRelatorio, area: s
     .sort((a, b) => ordemEstrato.indexOf(a[0]) - ordemEstrato.indexOf(b[0]))
     .map(([e, vs]) => [e, vs.length, arred(vs.reduce((s, v) => s + v, 0)), arred(vs.reduce((s, v) => s + v, 0) / vs.length)]);
 
-  const gratuitos = [...porPub.entries()].filter(([, v]) => v === 0).map(([pid]) => pubMap.get(pid)).filter(Boolean) as LinhaLista[];
+  // Gratuito = todos os custos conhecidos são R$ 0 e nenhuma taxa está como "Ainda não sei".
+  const gratuitos = ([...porPub.entries()].filter(([, v]) => v === 0).map(([pid]) => pubMap.get(pid)).filter(Boolean) as LinhaLista[]).filter(
+    (p) => !p.taxa_submissao_nao_sei && !p.taxa_publicacao_nao_sei,
+  );
 
   return {
     chave: "custos",
@@ -161,7 +164,7 @@ function relatorioCustos(donoId: number, f: Filtros, o: OpcoesRelatorio, area: s
           l.moeda === "BRL" ? "" : `${l.cotacao.toFixed(4).replace(".", ",")}${l.cotacao_estimada ? " (estimada)" : ""}`,
           l.valor_brl,
           l.parte_autor_brl,
-          l.data_pagamento ? dataBr(l.data_pagamento) : "Pendente",
+          l.data_pagamento ? dataBr(l.data_pagamento) : l.valor === 0 ? "—" : "Pendente",
           l.pagador,
         ]),
         moeda: [5, 6],

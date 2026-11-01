@@ -271,7 +271,8 @@ export function possiveisDuplicatas(donoId: number) {
   );
   const ligados = new Set(
     todos<{ a_id: number; b_id: number }>(
-      "SELECT a_id, b_id FROM versao_relacionada WHERE a_id IN (SELECT id FROM publicacao WHERE dono_id = ?)",
+      `SELECT a_id, b_id FROM versao_relacionada WHERE a_id IN (SELECT id FROM publicacao WHERE dono_id = ?1)
+       UNION SELECT a_id, b_id FROM duplicata_descartada WHERE a_id IN (SELECT id FROM publicacao WHERE dono_id = ?1)`,
       donoId,
     ).map((r) => `${r.a_id}-${r.b_id}`),
   );
