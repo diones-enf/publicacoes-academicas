@@ -30,7 +30,7 @@ export async function carregarDadosExemplo(ctx: Contexto) {
   const ano = Number(hoje.slice(0, 4));
 
   const rev1 = encontrarOuCriarVeiculo(ctx.donoId, { nome: "Revista Exemplo de Enfermagem", issn: "0102-6933", eissn: "1983-1447", editora: "Editora Exemplo" });
-  const rev2 = encontrarOuCriarVeiculo(ctx.donoId, { nome: "Journal of Example Nursing", eissn: "2049-3630", editora: "Example Press" });
+  const rev2 = encontrarOuCriarVeiculo(ctx.donoId, { nome: "Revista Internacional Exemplo de Enfermagem", eissn: "2049-3630", editora: "Editora Exemplo Internacional" });
   const rev3 = encontrarOuCriarVeiculo(ctx.donoId, { nome: "Cadernos Exemplo de Saúde Coletiva", issn: "0104-0707" });
   for (const id of [rev1, rev2, rev3]) executar("UPDATE veiculo SET site = 'exemplo' WHERE id = ?", id);
   salvarMetrica(ctx.donoId, rev1, { indicador: "QUALIS", valor: "A2", area: "Enfermagem", periodo: "2021-2024", selo: "confirmado_oficial", fonte: "Sucupira" });
@@ -70,8 +70,8 @@ export async function carregarDadosExemplo(ctx: Contexto) {
     taxa_publicacao: { valor: 980, nao_sei: false, data_pagamento: `${ano - 1}-07-05` },
   }));
   const artigoUsd = await criar(base({
-    titulo: "Nurse-led interventions in intensive care: a systematic review (example)",
-    subtipo_id: sub("artigo", "Revisão sistemática"), idioma: "Inglês",
+    titulo: "Intervenções de enfermagem em terapia intensiva: revisão sistemática (exemplo)",
+    subtipo_id: sub("artigo", "Revisão sistemática"),
     veiculo_id: rev2, data_submissao: `${ano - 1}-08-01`, data_aceite: `${ano}-01-20`, data_publicacao: `${ano}-03-05`,
     volume: "12", paginas: "101-115", doi: "10.9999/exemplo.2024.002",
     autores: [{ nome: "SCHIAVAO, L." }, { nome: eu }, { nome: "LIMA, A. C." }, { nome: "SOUZA, P. M." }],
