@@ -1,0 +1,34 @@
+{
+  "name": "publicacoes-academicas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistema local de controle de publicações acadêmicas",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "iniciar": "next build && next start -p 3000",
+    "exemplo": "node --experimental-strip-types scripts/dados-exemplo.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "2.0.2",
+    "exceljs": "4.4.0",
+    "next": "16.4.2",
+    "nodemailer": "10.1.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.0",
+    "@types/nodemailer": "7.0.1",
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
+    "typescript": "5.9.2",
+    "vitest": "5.0.5"
+  }
+}
