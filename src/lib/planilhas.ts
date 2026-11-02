@@ -85,15 +85,24 @@ export interface ResultadoImportacao {
 }
 
 /** Planilha do Qualis (Sucupira ou dados abertos da CAPES): ISSN, título, área de avaliação, estrato. */
-export function importarQualis(linhas: string[][], periodo: string, nomeArquivo: string): number {
+/** "classificacoes_publicadas_enfermagem_2026_123.xlsx" -> "Enfermagem" (o Sucupira põe a área no nome do arquivo). */
+export function areaDoNomeArquivo(nome: string): string {
+  const m = nome.toLowerCase().match(/classificacoes_publicadas_(.+?)_\d{4}/);
+  return m ? tituloArea(m[1].replace(/_/g, " ").toUpperCase()) : "";
+}
+
+export function importarQualis(linhas: string[][], periodo: string, nomeArquivo: string, areaInformada = ""): number {
   const c = acharColunas(linhas, {
     issn: (x) => x === "issn" || x.startsWith("issn"),
     titulo: (x) => x.startsWith("titulo") || x.includes("periodico"),
     area: (x) => x.includes("area"),
     estrato: (x) => x.includes("estrato") || x === "qualis" || x.includes("classificacao"),
   });
-  if (!c || c.idx.area < 0 || c.idx.estrato < 0)
-    throw new Error("Não encontrei as colunas ISSN, Área de avaliação e Estrato nesta planilha. Confira se é a lista do Qualis.");
+  if (!c || c.idx.estrato < 0)
+    throw new Error("Não encontrei as colunas ISSN e Estrato nesta planilha. Confira se é a lista do Qualis.");
+  // A exportação do Sucupira por área não traz a coluna de área: usa a informada ou a do nome do arquivo.
+  const areaFixa = areaInformada.trim() || areaDoNomeArquivo(nomeArquivo);
+  if (c.idx.area < 0 && !areaFixa) throw new Error("Esta planilha não tem a coluna de área. Informe a área de avaliação no campo acima.");
   const p = periodo.trim();
   if (!/^\d{4}-\d{4}$/.test(p)) throw new Error("Informe o quadriênio no formato 2021-2024.");
   let n = 0;
@@ -101,7 +110,7 @@ export function importarQualis(linhas: string[][], periodo: string, nomeArquivo:
     for (const l of linhas.slice(c.inicio)) {
       const issn = normalizarIssn(l[c.idx.issn]);
       const estrato = (l[c.idx.estrato] ?? "").toUpperCase().trim();
-      const area = (l[c.idx.area] ?? "").trim();
+      const area = (c.idx.area >= 0 ? (l[c.idx.area] ?? "").trim() : "") || areaFixa;
       if (!issn || !/^(A[1-4]|B[1-4]|C|NP)$/.test(estrato) || !area) continue;
       executar("DELETE FROM ref_qualis WHERE issn = ? AND area = ? AND periodo = ?", issn, tituloArea(area), p);
       inserir("ref_qualis", { issn, titulo: c.idx.titulo >= 0 ? l[c.idx.titulo] : null, area: tituloArea(area), estrato, periodo: p });

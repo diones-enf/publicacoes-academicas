@@ -135,3 +135,19 @@ describe("atualização pelo próprio sistema", () => {
     expect(fs.readFileSync(destino + "/dados/publicacoes.db", "utf8")).toBe("meus dados");
   });
 });
+
+describe("planilha exportada do Sucupira (sem coluna de área)", () => {
+  it("usa a área do nome do arquivo ou a informada", async () => {
+    const { areaDoNomeArquivo } = await import("@/lib/planilhas");
+    expect(areaDoNomeArquivo("classificacoes_publicadas_enfermagem_2026_1783453534880.xlsx")).toBe("Enfermagem");
+    expect(areaDoNomeArquivo("classificacoes_publicadas_saude_coletiva_2026_1.xlsx")).toBe("Saude Coletiva");
+    const ctx = await novoAmbiente();
+    await criarPublicacao(ctx, artigo(ctx));
+    const linhas = [["ISSN", "Título", "Estrato"], ["0102-6933", "REVISTA GAUCHA", "A2"]];
+    expect(importarQualis(linhas, "2021-2024", "classificacoes_publicadas_enfermagem_2026_1.xlsx")).toBe(1);
+    expect(() => importarQualis(linhas, "2021-2024", "qualquer.xlsx")).toThrow("área");
+    expect(importarQualis(linhas, "2021-2024", "qualquer.xlsx", "Enfermagem")).toBe(1);
+    aplicarListasEmTodas(ctx.donoId);
+    expect(listarPublicacoes(ctx.donoId, {}, "Enfermagem")[0].metricas?.qualis).toBe("A2");
+  });
+});

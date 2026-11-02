@@ -17,7 +17,7 @@ export const POST = rota(async (req, { ctx }) => {
   const linhas = await lerPlanilha(Buffer.from(await arquivo.arrayBuffer()), arquivo.name);
   let descricao: string;
   if (tipo === "qualis") {
-    const n = importarQualis(linhas, String(form.get("periodo") ?? ""), arquivo.name);
+    const n = importarQualis(linhas, String(form.get("periodo") ?? ""), arquivo.name, String(form.get("area") ?? ""));
     descricao = `${n.toLocaleString("pt-BR")} classificações Qualis importadas`;
   } else if (tipo === "jcr") {
     const r = importarJcr(linhas, arquivo.name);

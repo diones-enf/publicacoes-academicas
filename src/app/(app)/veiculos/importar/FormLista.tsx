@@ -30,6 +30,13 @@ export function FormLista({ tipo }: { tipo: "qualis" | "jcr" }) {
         </div>
         {tipo === "qualis" && (
           <div className="campo">
+            <label htmlFor="area-qualis">Área de avaliação</label>
+            <input id="area-qualis" name="area" defaultValue="Enfermagem" />
+            <div className="ajuda">Usada quando a planilha não tem a coluna de área (exportação do Sucupira).</div>
+          </div>
+        )}
+        {tipo === "qualis" && (
+          <div className="campo">
             <label htmlFor="periodo">Quadriênio da lista</label>
             <select id="periodo" name="periodo" defaultValue="2021-2024">
               <option>2021-2024</option>
