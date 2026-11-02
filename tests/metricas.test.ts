@@ -113,3 +113,25 @@ describe("Qualis no artigo e na busca", () => {
     expect(listarPublicacoes(ctx.donoId, { q: "qualis enfermagem" }, "Enfermagem")).toHaveLength(2);
   });
 });
+
+describe("atualização pelo próprio sistema", () => {
+  it("compara versões e grava o ZIP sem tocar nos dados", async () => {
+    const { aplicarZip, eMaisNova } = await import("@/lib/atualizacao");
+    expect(eMaisNova("8", "7")).toBe(true);
+    expect(eMaisNova("7", "7")).toBe(false);
+    expect(eMaisNova("10", "9")).toBe(true);
+    expect(eMaisNova(null, "7")).toBe(false);
+    const JSZip = (await import("jszip")).default;
+    const z = new JSZip();
+    z.file("publicacoes-academicas-main/package.json", '{"version":"8"}');
+    z.file("publicacoes-academicas-main/src/x.ts", "novo");
+    z.file("publicacoes-academicas-main/dados/publicacoes.db", "NÃO PODE");
+    const destino = "/tmp/publicacoes-teste/atualizacao";
+    fs.rmSync(destino, { recursive: true, force: true });
+    fs.mkdirSync(destino + "/dados", { recursive: true });
+    fs.writeFileSync(destino + "/dados/publicacoes.db", "meus dados");
+    expect(await aplicarZip(await z.generateAsync({ type: "nodebuffer" }), destino)).toBe(2);
+    expect(fs.readFileSync(destino + "/src/x.ts", "utf8")).toBe("novo");
+    expect(fs.readFileSync(destino + "/dados/publicacoes.db", "utf8")).toBe("meus dados");
+  });
+});

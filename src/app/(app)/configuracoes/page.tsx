@@ -6,6 +6,7 @@ import { metaLer, todos, caminhoBanco } from "@/lib/db";
 import { emailConfigurado } from "@/lib/email";
 import { dataBr } from "@/lib/texto";
 import { BotaoAcao } from "@/componentes/Acoes";
+import { AtualizarSistema } from "@/componentes/AtualizarSistema";
 import { EditorTipos, ExcluirTudo, FormLeitor, FormPerfil, FormSenha } from "./Formularios";
 
 export default async function Configuracoes() {
@@ -20,6 +21,10 @@ export default async function Configuracoes() {
   return (
     <>
       <h1>Configurações</h1>
+      <section className="cartao">
+        <h2 style={{ marginTop: 0 }}>Atualização do sistema</h2>
+        <AtualizarSistema />
+      </section>
       <section className="cartao">
         <h2 style={{ marginTop: 0 }}>Seus dados</h2>
         <p className="suave">CPF: {u.cpf_mascara} (o número completo não fica gravado).</p>

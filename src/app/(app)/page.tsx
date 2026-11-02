@@ -3,6 +3,7 @@ import { exigirUsuario, contextoDe } from "@/lib/sessao";
 import { dadosPainel } from "@/lib/painel";
 import { competenciaBr, dataBr, reais } from "@/lib/texto";
 import { BotaoAcao } from "@/componentes/Acoes";
+import { AtualizarSistema } from "@/componentes/AtualizarSistema";
 import { possiveisDuplicatas } from "@/lib/filtros";
 import { temDadosExemplo } from "@/lib/exemplo";
 import { um } from "@/lib/db";
@@ -27,6 +28,7 @@ export default async function Painel() {
         <h1>Olá, {u.nome.split(" ")[0]}</h1>
         <a className="botao" href="/publicacoes/nova">+ Nova publicação</a>
       </div>
+      <AtualizarSistema compacto />
       {vazio && (
         <div className="aviso info">
           Ainda não há publicações. Comece por <a href="/publicacoes/nova">+ Nova publicação</a> (cole um DOI e o sistema preenche o resto) ou{" "}
