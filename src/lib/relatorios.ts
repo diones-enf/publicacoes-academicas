@@ -305,7 +305,7 @@ function relatorioIndicadores(donoId: number, f: Filtros, area: string | null): 
   const tipos = [...new Set(pubs.map((p) => p.tipo))];
   const artigos = pubs.filter((p) => p.tipo_chave === "artigo");
   const comPapel = pubs.filter((p) => p.papel_autor);
-  const principal = comPapel.filter((p) => p.papel_autor === "Autor principal" || p.papel_autor === "Autor único").length;
+  const principal = comPapel.filter((p) => p.papel_autor === "Autor principal").length;
   const estratos = [...ESTRATOS_QUALIS, "Sem Qualis"];
   return {
     chave: "indicadores",
@@ -315,7 +315,7 @@ function relatorioIndicadores(donoId: number, f: Filtros, area: string | null): 
       { rotulo: "Total", valor: String(pubs.length) },
       { rotulo: "Artigos", valor: String(artigos.length) },
       { rotulo: "Artigos com JCR", valor: String(artigos.filter((p) => p.metricas?.tem_jcr).length) },
-      { rotulo: "Como autor principal/único", valor: comPapel.length ? `${Math.round((principal / comPapel.length) * 100)}%` : "—" },
+      { rotulo: "Como autor principal", valor: comPapel.length ? `${Math.round((principal / comPapel.length) * 100)}%` : "—" },
     ],
     graficos: [{ titulo: "Publicações por ano", rotulos: anos.map(String), series: [{ nome: "Itens", valores: anos.map((a) => pubs.filter((p) => p.ano === a).length) }] }],
     tabelas: [

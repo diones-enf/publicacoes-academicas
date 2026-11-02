@@ -37,8 +37,8 @@ export function localizarAutorPrincipal(
 }
 
 export function papelPadrao(posicao: number, total: number): string {
-  if (total <= 1) return "Autor único";
-  if (posicao === 0) return "Autor principal";
+  // Autor único conta como autor principal (mesma coisa).
+  if (total <= 1 || posicao === 0) return "Autor principal";
   return "Coautor";
 }
 

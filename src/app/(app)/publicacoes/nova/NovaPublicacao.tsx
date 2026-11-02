@@ -27,7 +27,7 @@ interface Resultado {
 
 const MODOS: { chave: Modo; rotulo: string; dica: string }[] = [
   { chave: "doi", rotulo: "Por DOI", dica: "Cole o DOI em qualquer formato: 10.xxxx/..., doi.org/... ou o link completo." },
-  { chave: "autor", rotulo: "Por autor ou ORCID", dica: "Lista as publicações encontradas no ORCID, OpenAlex e Crossref." },
+  { chave: "autor", rotulo: "Por autor ou ORCID", dica: "Lista as publicações encontradas no ORCID, OpenAlex e Crossref que ainda não estão no sistema." },
   { chave: "titulo", rotulo: "Por título", dica: "Para itens sem DOI à mão." },
   { chave: "isbn", rotulo: "Por ISBN", dica: "Para livros e capítulos." },
 ];
@@ -103,6 +103,9 @@ export function NovaPublicacao(props: {
     );
 
   const dica = MODOS.find((m) => m.chave === modo)!.dica;
+  // Só mostra o que ainda falta cadastrar
+  const pendentes = (resultados ?? []).filter((r) => !r.cadastrado_id);
+  const jaCadastrados = (resultados ?? []).length - pendentes.length;
   return (
     <>
       <div className="cartao">
@@ -154,12 +157,15 @@ export function NovaPublicacao(props: {
 
       {resultados && (
         <div className="cartao">
-          <h2 style={{ marginTop: 0 }}>{resultados.length} resultado(s)</h2>
-          {resultados.length === 0 && (
-            <p>Nada encontrado. <button className="link" onClick={() => setForm({ f: formVazio(String(props.tipos[0]?.id ?? "")), sugestao: null, fontes: [] })}>Preencher em branco</button></p>
+          <h2 style={{ marginTop: 0 }}>{pendentes.length} publicação(ões) ainda não cadastrada(s)</h2>
+          {jaCadastrados > 0 && (
+            <p className="suave">{jaCadastrados} resultado(s) já estão no sistema e foram ocultados.</p>
+          )}
+          {pendentes.length === 0 && (
+            <p>{jaCadastrados > 0 ? "Tudo o que foi encontrado já está cadastrado." : "Nada encontrado."} <button className="link" onClick={() => setForm({ f: formVazio(String(props.tipos[0]?.id ?? "")), sugestao: null, fontes: [] })}>Preencher em branco</button></p>
           )}
           <ul className="lista-itens">
-            {resultados.map((r, i) => (
+            {pendentes.map((r, i) => (
               <li key={i}>
                 <div className="item-titulo">{r.titulo}</div>
                 <div className="meta">

@@ -32,7 +32,7 @@ export const ROTULO_SECAO: Record<Secao, string> = {
   encerrados: "Encerrados",
 };
 
-export const PAPEIS_AUTOR = ["Autor único", "Autor principal", "Coautor", "Correspondente", "Orientador"] as const;
+export const PAPEIS_AUTOR = ["Autor principal", "Coautor", "Correspondente", "Orientador"] as const;
 
 export interface TipoPadrao {
   chave: string;

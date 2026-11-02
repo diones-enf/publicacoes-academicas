@@ -156,7 +156,7 @@ export const MIGRACOES: string[] = [
     instituicao TEXT,
     registro TEXT,
     -- autoria do autor principal
-    papel_autor TEXT,        -- Autor único / Autor principal / Coautor / Correspondente / Orientador
+    papel_autor TEXT,        -- Autor principal / Coautor / Correspondente / Orientador
     -- submissões em andamento
     id_submissao TEXT,
     link_sistema TEXT,
@@ -324,5 +324,8 @@ export const MIGRACOES: string[] = [
     nome TEXT NOT NULL,
     filtros TEXT NOT NULL
   );
+  `,
+  /* 2 — "Autor único" passa a ser "Autor principal" */ `
+  UPDATE publicacao SET papel_autor = 'Autor principal' WHERE papel_autor = 'Autor único';
   `,
 ];

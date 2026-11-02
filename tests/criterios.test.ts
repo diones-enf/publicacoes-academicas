@@ -137,7 +137,7 @@ describe("5. Ranking de coautores junta grafias diferentes após confirmação",
     expect(p.autores.find((a) => a.eh_principal)?.ordem).toBe(2);
     expect(p.papel_autor).toBe("Coautor");
     const id2 = await criarPublicacao(ctx, artigo(ctx, { titulo: "Solo", autores: [{ nome: "Daniela Rodrigues Rosa" }] }));
-    expect(obterPublicacao(ctx.donoId, id2)!.papel_autor).toBe("Autor único");
+    expect(obterPublicacao(ctx.donoId, id2)!.papel_autor).toBe("Autor principal");
   });
 });
 
