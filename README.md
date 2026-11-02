@@ -11,7 +11,22 @@ foi feito e o que fica para as fases 2 e 3).
 
 ---
 
-## Instalação (uma vez só)
+## Jeito mais fácil (Windows)
+
+1. Baixe o sistema: https://github.com/diones-enf/publicacoes-academicas/archive/refs/heads/main.zip
+   e descompacte (botão direito → Extrair tudo).
+2. Dentro da pasta, dê **dois cliques em `INICIAR.bat`** (pode aparecer só como `INICIAR`).
+   - Se o Node.js não estiver instalado, ele abre a página de download: instale a versão LTS e clique em INICIAR de novo.
+   - Na primeira vez ele demora alguns minutos preparando tudo.
+3. O navegador abre sozinho em http://localhost:3000. Deixe a janela preta aberta enquanto usa.
+
+Se o Windows mostrar "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo**.
+
+Ao baixar uma versão nova do sistema, copie a pasta `dados` da versão antiga para a nova (é onde ficam suas informações).
+
+---
+
+## Instalação manual (uma vez só)
 
 ### 1. Instale o Node.js
 
