@@ -7,6 +7,9 @@ import { salvarIndexacao, salvarMetrica, veiculoDoDono } from "./veiculos";
 import { normalizarIssn } from "./texto";
 import { carregarScimago } from "./conectores/scimago";
 import { estaNoDoaj, estaNoMedline, estaNoScielo } from "./conectores/indexadores";
+import { revistaOpenAlex } from "./conectores/openalexFonte";
+import { executar, transacao } from "./db";
+import { normalizar } from "./texto";
 
 export interface ResultadoMetricas {
   encontrados: string[];
@@ -34,6 +37,24 @@ export function aplicarListasOficiais(donoId: number, veiculoId: number): string
     salvarMetrica(donoId, veiculoId, { indicador: "QUALIS", valor: q.estrato, area: q.area, periodo: q.periodo, selo: "confirmado_oficial", fonte: "Qualis CAPES (planilha oficial)" });
   }
   if (qualis.length) achados.push(`Qualis (${qualis.length} área(s))`);
+  else {
+    // ISSN não bateu: procura pelo nome da revista (fica marcado para conferir o ISSN)
+    prepararTitulosQualis();
+    const porNome = todos<{ area: string; estrato: string; periodo: string }>(
+      "SELECT DISTINCT area, estrato, periodo FROM ref_qualis WHERE titulo_normalizado = ?",
+      normalizar(v.nome),
+    );
+    for (const q of porNome)
+      salvarMetrica(donoId, veiculoId, {
+        indicador: "QUALIS",
+        valor: q.estrato,
+        area: q.area,
+        periodo: q.periodo,
+        selo: "informado_usuario",
+        fonte: "Qualis CAPES — encontrado pelo nome da revista (confira o ISSN)",
+      });
+    if (porNome.length) achados.push(`Qualis pelo nome (${porNome.length} área(s), confira o ISSN)`);
+  }
 
   const jcr = um<{ ano: string; jif: string | null; jif5: string | null; jci: string | null; quartil: string | null; categoria: string | null; edicao: string | null }>(
     `SELECT * FROM ref_jcr WHERE issn IN (${marc}) ORDER BY ano DESC LIMIT 1`,
@@ -83,6 +104,21 @@ export async function buscarMetricasAutomaticas(donoId: number, veiculoId: numbe
     avisos.push(`SCImago: ${(e as Error).message}`);
   }
 
+  // OpenAlex: impacto médio de 2 anos, índice h e APC
+  try {
+    let oa = null;
+    for (const i of issns) if (!oa) oa = await revistaOpenAlex(i);
+    if (oa) {
+      const base = { periodo: String(new Date().getFullYear()), selo: "confirmado_oficial", fonte: "OpenAlex" };
+      if (oa.impacto2a !== null) salvarMetrica(donoId, veiculoId, { ...base, indicador: "IMPACTO_2A_OPENALEX", valor: String(oa.impacto2a) });
+      if (oa.h !== null) salvarMetrica(donoId, veiculoId, { ...base, indicador: "H_OPENALEX", valor: String(oa.h) });
+      if (oa.apcUsd !== null) salvarMetrica(donoId, veiculoId, { ...base, indicador: "APC_USD", valor: String(oa.apcUsd) });
+      encontrados.push("OpenAlex (impacto 2 anos, índice h)");
+    }
+  } catch (e) {
+    avisos.push((e as Error).message);
+  }
+
   // Bases com consulta pública
   const consultas: [string, (i: string) => Promise<boolean>][] = [
     ["DOAJ", estaNoDoaj],
@@ -129,4 +165,15 @@ export function aplicarListasEmTodas(donoId: number): number {
   for (const v of todos<{ id: number }>("SELECT id FROM veiculo WHERE dono_id = ?", donoId))
     if (aplicarListasOficiais(donoId, v.id).length) n++;
   return n;
+}
+
+/** Preenche uma vez o título normalizado das listas importadas (para a busca pelo nome). */
+function prepararTitulosQualis() {
+  const faltando = todos<{ rowid: number; titulo: string | null }>(
+    "SELECT rowid, titulo FROM ref_qualis WHERE titulo_normalizado IS NULL LIMIT 200000",
+  );
+  if (!faltando.length) return;
+  transacao(() => {
+    for (const r of faltando) executar("UPDATE ref_qualis SET titulo_normalizado = ? WHERE rowid = ?", normalizar(r.titulo ?? ""), r.rowid);
+  });
 }

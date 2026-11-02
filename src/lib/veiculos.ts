@@ -252,6 +252,8 @@ export interface ResumoMetricas {
   sjr: number | null;
   citescore: number | null;
   quartil_scopus: string | null;
+  impacto2a: number | null;
+  apc_usd: number | null;
   colecao_wos: string | null;
   indexacoes: string[];
   tem_jcr: boolean;
@@ -291,6 +293,8 @@ export function resumoMetricas(veiculoIds: number[], areaQualisRef: string | nul
       sjr: num(maisRecente(ms, "SJR")),
       citescore: num(maisRecente(ms, "CITESCORE")),
       quartil_scopus: maisRecente(ms, "QUARTIL_SCOPUS")?.valor ?? null,
+      impacto2a: num(maisRecente(ms, "IMPACTO_2A_OPENALEX")),
+      apc_usd: num(maisRecente(ms, "APC_USD")),
       colecao_wos: maisRecente(ms, "COLECAO_WOS")?.valor ?? null,
       indexacoes: ix.filter((i) => i.situacao === "ativa").map((i) => i.base),
       tem_jcr: !!jif,

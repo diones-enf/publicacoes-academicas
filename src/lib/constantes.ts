@@ -92,6 +92,9 @@ export const INDICADORES: { chave: string; nome: string }[] = [
   { chave: "CITESCORE", nome: "CiteScore" },
   { chave: "QUARTIL_SCOPUS", nome: "Quartil Scopus" },
   { chave: "H5", nome: "h5 (Google Acadêmico)" },
+  { chave: "IMPACTO_2A_OPENALEX", nome: "Impacto médio 2 anos (OpenAlex)" },
+  { chave: "H_OPENALEX", nome: "Índice h (OpenAlex)" },
+  { chave: "APC_USD", nome: "APC cobrada (US$)" },
 ];
 
 export const ESTRATOS_QUALIS = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "C"];

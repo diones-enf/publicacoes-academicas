@@ -56,6 +56,8 @@ export default async function Lista({ searchParams }: { searchParams: Promise<Re
                   {p.metricas?.qualis ? <span className="selo verde">Qualis {p.metricas.qualis}{p.metricas.qualis_area ? ` · ${p.metricas.qualis_area}` : ""}</span> : p.tipo_chave === "artigo" ? <span className="selo amarelo">sem Qualis</span> : null}
                   {p.metricas?.jif !== null && p.metricas?.jif !== undefined && <span className="selo">JIF {p.metricas.jif.toString().replace(".", ",")}</span>}
                   {p.metricas?.quartil_jcr && <span className="selo">JCR {p.metricas.quartil_jcr}</span>}
+                  {p.metricas?.quartil_scopus && <span className="selo">Scopus {p.metricas.quartil_scopus}</span>}
+                  {p.metricas?.impacto2a !== null && p.metricas?.impacto2a !== undefined && <span className="selo" title="Impacto médio de 2 anos (OpenAlex), parecido com o JIF">Impacto OA {String(p.metricas.impacto2a).replace(".", ",")}</span>}
                   {p.papel_autor && <span>{p.papel_autor}{p.posicao ? ` (${p.posicao}º de ${p.total_autores})` : ""}</span>}
                   {p.n_lancamentos > 0 && <span>{p.custo_total === 0 ? "Gratuito" : reais(p.custo_total)}{p.custo_pendente > 0 ? " (pendente)" : ""}</span>}
                   {p.doi ? <span>DOI {p.doi}</span> : <span className="selo amarelo">sem DOI</span>}

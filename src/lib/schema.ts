@@ -358,4 +358,8 @@ export const MIGRACOES: string[] = [
     em TEXT NOT NULL DEFAULT (datetime('now'))
   );
   `,
+  /* 4 — busca do Qualis pelo nome da revista */ `
+  ALTER TABLE ref_qualis ADD COLUMN titulo_normalizado TEXT;
+  CREATE INDEX ix_ref_qualis_titulo ON ref_qualis(titulo_normalizado);
+  `,
 ];

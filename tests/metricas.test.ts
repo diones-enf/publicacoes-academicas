@@ -151,3 +151,31 @@ describe("planilha exportada do Sucupira (sem coluna de área)", () => {
     expect(listarPublicacoes(ctx.donoId, {}, "Enfermagem")[0].metricas?.qualis).toBe("A2");
   });
 });
+
+describe("índices gratuitos do OpenAlex e Qualis pelo nome", () => {
+  it("grava impacto de 2 anos, índice h e APC", async () => {
+    const ctx = await novoAmbiente();
+    fs.rmSync("/tmp/publicacoes-teste/referencias", { recursive: true, force: true });
+    limparCacheScimago();
+    simularFetch({
+      "api.openalex.org/sources/issn": { display_name: "Rev Gaucha", summary_stats: { "2yr_mean_citedness": 0.8765, h_index: 31 }, apc_usd: 400, is_in_doaj: true },
+    });
+    const id = await criarPublicacao(ctx, artigo(ctx));
+    const v = Number(obterPublicacao(ctx.donoId, id)!.veiculo_id);
+    const r = await buscarMetricasAutomaticas(ctx.donoId, v);
+    expect(r.encontrados).toContain("OpenAlex (impacto 2 anos, índice h)");
+    const p = listarPublicacoes(ctx.donoId, {}, null)[0];
+    expect(p.metricas?.impacto2a).toBe(0.877);
+    expect(p.metricas?.apc_usd).toBe(400);
+    expect(metricasDoVeiculo(v).find((m) => m.indicador === "H_OPENALEX")?.valor).toBe("31");
+  });
+  it("acha o Qualis pelo nome quando o ISSN não bate, marcando para conferir", async () => {
+    const ctx = await novoAmbiente();
+    await criarPublicacao(ctx, artigo(ctx, { veiculo: { nome: "Revista Gaúcha de Enfermagem", issn: "9999-9999" } }));
+    importarQualis(lerCsv(QUALIS), "2021-2024", "q.csv");
+    aplicarListasEmTodas(ctx.donoId);
+    const p = listarPublicacoes(ctx.donoId, {}, "Enfermagem")[0];
+    expect(p.metricas?.qualis).toBe("A2");
+    expect(p.metricas?.metrica_nao_confirmada).toBe(true);
+  });
+});

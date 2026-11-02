@@ -231,12 +231,13 @@ function linhaArtigo(p: LinhaLista): Celula[] {
     m?.jif ?? "",
     m?.quartil_jcr ?? "",
     m?.quartil_scopus ?? "",
+    m?.impacto2a ?? "",
     m?.indexacoes.join(", ") ?? "",
     p.doi ?? "",
     p.papel_autor ?? "",
   ];
 }
-const COLUNAS_ARTIGO = ["Título", "Revista", "Ano", "Qualis", "JIF", "Quartil JCR", "Quartil Scopus", "Indexações", "DOI", "Papel"];
+const COLUNAS_ARTIGO = ["Título", "Revista", "Ano", "Qualis", "JIF", "Quartil JCR", "Quartil Scopus", "Impacto 2 anos (OpenAlex)", "Indexações", "DOI", "Papel"];
 
 function porSubtipo(lista: LinhaLista[], colunas: string[], linha: (p: LinhaLista) => Celula[]): Tabela[] {
   return [...agrupar(lista, (p) => p.subtipo ?? "Sem subtipo").entries()].map(([s, v]) => ({

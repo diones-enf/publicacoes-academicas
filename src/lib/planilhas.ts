@@ -113,7 +113,8 @@ export function importarQualis(linhas: string[][], periodo: string, nomeArquivo:
       const area = (c.idx.area >= 0 ? (l[c.idx.area] ?? "").trim() : "") || areaFixa;
       if (!issn || !/^(A[1-4]|B[1-4]|C|NP)$/.test(estrato) || !area) continue;
       executar("DELETE FROM ref_qualis WHERE issn = ? AND area = ? AND periodo = ?", issn, tituloArea(area), p);
-      inserir("ref_qualis", { issn, titulo: c.idx.titulo >= 0 ? l[c.idx.titulo] : null, area: tituloArea(area), estrato, periodo: p });
+      const titulo = c.idx.titulo >= 0 ? l[c.idx.titulo] : null;
+      inserir("ref_qualis", { issn, titulo, titulo_normalizado: titulo ? normalizar(titulo) : null, area: tituloArea(area), estrato, periodo: p });
       n++;
     }
     inserir("importacao_lista", { tipo: "Qualis", arquivo: nomeArquivo, periodo: p, linhas: n });
