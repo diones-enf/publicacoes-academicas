@@ -174,3 +174,32 @@ export function listasImportadas() {
     "SELECT tipo, arquivo, periodo, linhas, em FROM importacao_lista ORDER BY id DESC LIMIT 20",
   );
 }
+
+/**
+ * Texto copiado da tela de resultados do Sucupira (Ctrl+A, Ctrl+C na página).
+ * Cada linha com um ISSN e um estrato vira uma classificação. A área vem da
+ * própria linha (coluna "Área de Avaliação") ou, se não houver, da área informada.
+ */
+export function importarQualisColado(texto: string, periodo: string, areaPadrao: string): number {
+  const p = periodo.trim();
+  if (!/^\d{4}-\d{4}$/.test(p)) throw new Error("Informe o quadriênio no formato 2021-2024.");
+  const linhas: string[][] = [["ISSN", "Título", "Área de Avaliação", "Estrato"]];
+  for (const bruta of texto.split(/\r?\n/)) {
+    const issnM = bruta.match(/\b(\d{4}-?\d{3}[\dXx])\b/);
+    const estratos = [...bruta.matchAll(/(?:^|[\s\t|;])(A[1-4]|B[1-4]|C)(?=$|[\s\t|;])/g)];
+    if (!issnM || !estratos.length) continue;
+    const estrato = estratos[estratos.length - 1][1];
+    const partes = bruta.split("\t").map((x) => x.trim()).filter(Boolean);
+    let area = areaPadrao.trim();
+    let titulo = "";
+    if (partes.length >= 4) {
+      titulo = partes[1];
+      area = partes[2] || area;
+    } else if (partes.length === 3) titulo = partes[1];
+    linhas.push([issnM[1], titulo, area, estrato]);
+  }
+  if (linhas.length === 1)
+    throw new Error("Não encontrei linhas com ISSN e estrato no texto colado. Copie a página de resultados do Sucupira (Ctrl+A, Ctrl+C).");
+  if (linhas.slice(1).some((l) => !l[2])) throw new Error("Informe a área de avaliação (ex.: Enfermagem).");
+  return importarQualis(linhas, p, "colado do Sucupira");
+}

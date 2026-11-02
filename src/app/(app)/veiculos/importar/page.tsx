@@ -1,7 +1,7 @@
 import { exigirUsuario } from "@/lib/sessao";
 import { listasImportadas } from "@/lib/planilhas";
 import { dataBr } from "@/lib/texto";
-import { FormLista } from "./FormLista";
+import { FormColar, FormLista } from "./FormLista";
 
 export default async function Importar() {
   await exigirUsuario("autor");
@@ -17,7 +17,20 @@ export default async function Importar() {
       </p>
 
       <section className="cartao">
-        <h2 style={{ marginTop: 0 }}>Qualis (CAPES / Plataforma Sucupira)</h2>
+        <h2 style={{ marginTop: 0 }}>Qualis: copiar e colar do Sucupira (mais fácil)</h2>
+        <ol>
+          <li>Abra a <a href="https://sucupira-legado.capes.gov.br/sucupira/public/consultas/coleta/veiculoPublicacaoQualis/listaConsultaGeralPeriodicos.jsf" target="_blank" rel="noreferrer">consulta do Qualis no Sucupira</a>.</li>
+          <li>Escolha o <strong>Evento de Classificação</strong> (quadriênio). Deixe marcado só o quadradinho de <strong>Área de Avaliação</strong> e escolha a sua área. Desmarque ISSN, Título e Classificação.</li>
+          <li>Clique em <strong>Consultar</strong>. Se houver opção de quantidade por página, escolha a maior.</li>
+          <li>Clique em qualquer lugar da página de resultados, aperte <strong>Ctrl+A</strong> e depois <strong>Ctrl+C</strong>.</li>
+          <li>Volte aqui, clique na caixa abaixo e aperte <strong>Ctrl+V</strong>. Clique em <strong>Importar o que colei</strong>.</li>
+          <li>Se os resultados tiverem várias páginas, vá para a próxima página no Sucupira e repita os passos 4 e 5. Tudo se soma.</li>
+        </ol>
+        <FormColar />
+      </section>
+
+      <section className="cartao">
+        <h2 style={{ marginTop: 0 }}>Qualis por planilha (se tiver o arquivo)</h2>
         <ol>
           <li>Abra a consulta pública do Qualis na Plataforma Sucupira: <a href="https://sucupira.capes.gov.br/sucupira/public/consultas/coleta/veiculoPublicacaoQualis/listaConsultaGeralPeriodicos.jsf" target="_blank" rel="noreferrer">sucupira.capes.gov.br → Qualis Periódicos</a>.</li>
           <li>Em <strong>Evento de Classificação</strong>, escolha o quadriênio (ex.: 2021-2024 ou 2017-2020).</li>

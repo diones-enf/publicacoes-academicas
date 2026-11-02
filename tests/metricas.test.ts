@@ -76,3 +76,27 @@ describe("busca automática pela internet", () => {
     expect(r.avisos[0]).toContain("ISSN");
   });
 });
+
+describe("Qualis colado da tela do Sucupira", () => {
+  it("reconhece as linhas da tabela copiada (com tabulação)", async () => {
+    const { importarQualisColado } = await import("@/lib/planilhas");
+    const ctx = await novoAmbiente();
+    await criarPublicacao(ctx, artigo(ctx));
+    const texto = [
+      "Qualis Periódicos",
+      "ISSN\tTítulo\tÁrea de Avaliação\tClassificação",
+      "0102-6933\tREVISTA GAÚCHA DE ENFERMAGEM\tENFERMAGEM\tA2",
+      "1983-1447\tREVISTA GAÚCHA DE ENFERMAGEM (ONLINE)\tENFERMAGEM\tA2",
+      "Página 1 de 30",
+    ].join("\n");
+    expect(importarQualisColado(texto, "2021-2024", "Enfermagem")).toBe(2);
+    aplicarListasEmTodas(ctx.donoId);
+    expect(listarPublicacoes(ctx.donoId, {}, "Enfermagem")[0].metricas?.qualis).toBe("A2");
+  });
+  it("usa a área informada quando a linha não traz a área", async () => {
+    const { importarQualisColado } = await import("@/lib/planilhas");
+    await novoAmbiente();
+    expect(importarQualisColado("0102-6933 REVISTA X B1", "2021-2024", "Enfermagem")).toBe(1);
+    expect(() => importarQualisColado("nada aqui", "2021-2024", "Enfermagem")).toThrow("Não encontrei");
+  });
+});

@@ -1,14 +1,14 @@
 {
   "name": "publicacoes-academicas",
-  "version": "0.1.0",
+  "version": "6",
   "private": true,
   "description": "Sistema local de controle de publicações acadêmicas",
   "engines": {
     "node": ">=22.13"
   },
   "scripts": {
-    "iniciar": "next build && next start -H 127.0.0.1 -p 3000",
-    "start": "next start -H 127.0.0.1 -p 3000",
+    "start": "node scripts/iniciar.mjs",
+    "iniciar": "node scripts/iniciar.mjs",
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "build": "next build",
     "test": "vitest run",

@@ -20,41 +20,9 @@ if errorlevel 1 (
   exit /b
 )
 
-rem Desliga uma versao antiga que ainda esteja ligada (porta 3000)
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr /r /c:":3000 .*LISTENING"') do (
-  echo  Desligando uma versao do sistema que ja estava aberta...
-  taskkill /F /PID %%p >nul 2>nul
-)
-
-if not exist "node_modules\" (
-  echo  Primeira vez: preparando o sistema. Isso leva de 1 a 3 minutos...
+node scripts\iniciar.mjs
+if errorlevel 1 (
   echo.
-  call npm.cmd install --no-fund --no-audit
-  if errorlevel 1 goto erro
+  echo  Algo deu errado. Tire um print desta janela e envie para o Claude.
+  pause
 )
-
-if not exist ".next\BUILD_ID" (
-  echo.
-  echo  Montando o sistema. Isso leva cerca de 1 minuto...
-  echo.
-  call npm.cmd run build
-  if errorlevel 1 goto erro
-)
-
-echo.
-echo  Sistema ligado! O navegador vai abrir em alguns segundos.
-echo  Endereco: http://localhost:3000
-echo.
-echo  NAO FECHE ESTA JANELA enquanto estiver usando o sistema.
-echo  Para desligar, e so fechar esta janela.
-echo.
-start "" cmd /c "timeout /t 6 >nul & start http://localhost:3000"
-call npm.cmd start
-goto fim
-
-:erro
-echo.
-echo  Algo deu errado. Tire um print desta janela e envie para o Claude.
-pause
-
-:fim
