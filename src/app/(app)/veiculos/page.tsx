@@ -3,6 +3,7 @@ import { listarVeiculos, resumoMetricas } from "@/lib/veiculos";
 import { dataBr } from "@/lib/texto";
 import { Abrir } from "@/componentes/Painelzinho";
 import { FormVeiculo } from "./FormVeiculo";
+import { BuscarMetricas } from "./BuscarMetricas";
 
 export default async function Veiculos() {
   const u = await exigirUsuario("autor");
@@ -14,7 +15,11 @@ export default async function Veiculos() {
     <>
       <div className="topo">
         <h1>Revistas e veículos</h1>
-        <Abrir rotulo="+ Novo veículo" titulo="Novo veículo" classe=""><FormVeiculo /></Abrir>
+        <div className="acoes">
+          <BuscarMetricas url="/api/veiculos/metricas-auto" rotulo="Buscar métricas de todas as revistas" classe="secundario" />
+          <a className="botao secundario" href="/veiculos/importar">Importar Qualis e JCR</a>
+          <Abrir rotulo="+ Novo veículo" titulo="Novo veículo" classe=""><FormVeiculo /></Abrir>
+        </div>
       </div>
       <p className="suave">
         As métricas pertencem à revista: ao atualizar o JIF ou o Qualis aqui, todos os artigos publicados nela são atualizados juntos.

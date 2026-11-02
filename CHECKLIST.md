@@ -72,7 +72,8 @@ descrito) · ⏳ fase seguinte · ↔ adaptado (motivo ao lado).
 - ✅ Campos completos do JCR (JIF, JIF 5 anos, JCI, quartil, posição, categoria, coleção), Scopus (SJR, CiteScore, quartil) e Qualis (quadriênio, estrato, área).
 - ✅ Avisos: "estar no WoS ≠ ter JCR", ESCI só com JIF a partir do JCR 2023.
 - ✅ Alertas: ISSN inválido, indexação interrompida, métricas há mais de 12 meses sem conferência.
-- ⏳ Cruzamento automático pelo ISSN com as planilhas, aviso de nova lista Qualis, mudança de editora, lista de predatórias, "Reconferir todos" e rotina mensal (fase 2). Hoje há o botão "Marquei tudo como conferido hoje" por revista.
+- ✅ Busca automática pelo ISSN: Scopus (SJR e quartil, via SCImago), DOAJ, PubMed/MEDLINE e SciELO; Qualis e JCR pelas planilhas oficiais importadas (tela Revistas → Importar Qualis e JCR), aplicadas a todas as revistas.
+- ⏳ Aviso de nova lista Qualis, aviso de nova lista Qualis, mudança de editora, lista de predatórias, "Reconferir todos" e rotina mensal (fase 2). Hoje há o botão "Marquei tudo como conferido hoje" por revista.
 - 🟡 Validação de DOI: formato validado e "Completar campos vazios pelo DOI" mostra divergências com o Crossref; o alerta de "DOI que não resolve" vem com a rotina mensal.
 
 ## 7. Custos e taxas

@@ -328,4 +328,34 @@ export const MIGRACOES: string[] = [
   /* 2 — "Autor único" passa a ser "Autor principal" */ `
   UPDATE publicacao SET papel_autor = 'Autor principal' WHERE papel_autor = 'Autor único';
   `,
+  /* 3 — Listas oficiais importadas (Qualis e JCR), usadas para preencher as revistas pelo ISSN */ `
+  CREATE TABLE ref_qualis (
+    issn TEXT NOT NULL,
+    titulo TEXT,
+    area TEXT NOT NULL,
+    estrato TEXT NOT NULL,
+    periodo TEXT NOT NULL
+  );
+  CREATE INDEX ix_ref_qualis_issn ON ref_qualis(issn);
+  CREATE TABLE ref_jcr (
+    issn TEXT NOT NULL,
+    titulo TEXT,
+    ano TEXT NOT NULL,
+    jif TEXT,
+    jif5 TEXT,
+    jci TEXT,
+    quartil TEXT,
+    categoria TEXT,
+    edicao TEXT
+  );
+  CREATE INDEX ix_ref_jcr_issn ON ref_jcr(issn);
+  CREATE TABLE importacao_lista (
+    id INTEGER PRIMARY KEY,
+    tipo TEXT NOT NULL,
+    arquivo TEXT,
+    periodo TEXT,
+    linhas INTEGER,
+    em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
 ];

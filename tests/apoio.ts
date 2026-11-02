@@ -42,7 +42,8 @@ export function simularFetch(rotas: Record<string, unknown>) {
   const f = vi.fn(async (url: string) => {
     const chave = Object.keys(rotas).find((k) => String(url).includes(k));
     if (!chave) return new Response("não encontrado", { status: 404 });
-    return new Response(JSON.stringify(rotas[chave]), { status: 200, headers: { "Content-Type": "application/json" } });
+    const corpo = rotas[chave];
+    return new Response(typeof corpo === "string" ? corpo : JSON.stringify(corpo), { status: 200, headers: { "Content-Type": "application/json" } });
   });
   vi.stubGlobal("fetch", f);
   return f;

@@ -7,6 +7,7 @@ import { dataBr } from "@/lib/texto";
 import { BotaoAcao } from "@/componentes/Acoes";
 import { Abrir } from "@/componentes/Painelzinho";
 import { FormVeiculo } from "../FormVeiculo";
+import { BuscarMetricas } from "../BuscarMetricas";
 import { FormIndexacao, FormMetrica } from "./FormMetrica";
 
 const nomeIndicador = (c: string) => INDICADORES.find((i) => i.chave === c)?.nome ?? c;
@@ -41,6 +42,7 @@ export default async function Veiculo({ params }: { params: Promise<{ id: string
           <Abrir rotulo="Editar dados" titulo="Editar veículo">
             <FormVeiculo inicial={{ id: v.id, nome: v.nome, tipo: v.tipo, issn: v.issn ?? "", eissn: v.eissn ?? "", editora: v.editora ?? "", pais: v.pais ?? "", site: v.site ?? "" }} />
           </Abrir>
+          <BuscarMetricas url={`/api/veiculos/${id}/buscar-metricas`} rotulo="Buscar Qualis, JCR, Scopus e indexações" />
           <BotaoAcao url={`/api/veiculos/${id}/conferir`} rotulo="Marquei tudo como conferido hoje" classe="secundario" />
         </div>
       </div>
@@ -69,8 +71,8 @@ export default async function Veiculo({ params }: { params: Promise<{ id: string
             </div>
           )}
           <p className="ajuda suave" style={{ marginTop: "0.5rem" }}>
-            Nunca marque como &quot;Confirmado na fonte oficial&quot; um dado que só a revista informou. A importação das planilhas Qualis/JCR/Scopus
-            entra na fase 2.
+            Nunca marque como &quot;Confirmado na fonte oficial&quot; um dado que só a revista informou. Para o Qualis e o JCR, importe as listas oficiais
+            em <a href="/veiculos/importar">Importar Qualis e JCR</a>.
           </p>
         </section>
         <section className="cartao">
