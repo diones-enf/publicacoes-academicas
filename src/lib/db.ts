@@ -3,12 +3,27 @@
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { MIGRACOES } from "./schema";
 
 let banco: DatabaseSync | null = null;
 
+/**
+ * Os dados ficam fora da pasta do sistema (em Documentos), para que baixar
+ * uma versão nova não "perca" nada. Na primeira vez, se houver dados na
+ * pasta antiga (./dados), eles são copiados para lá.
+ */
 export function pastaDados(): string {
-  const p = process.env.PASTA_DADOS || path.join(process.cwd(), "dados");
+  if (process.env.PASTA_DADOS) {
+    fs.mkdirSync(process.env.PASTA_DADOS, { recursive: true });
+    return process.env.PASTA_DADOS;
+  }
+  const documentos = path.join(os.homedir(), "Documents");
+  const p = path.join(fs.existsSync(documentos) ? documentos : os.homedir(), "Publicacoes-Academicas-dados");
+  if (!fs.existsSync(path.join(p, "publicacoes.db"))) {
+    const antiga = path.join(process.cwd(), "dados");
+    if (fs.existsSync(path.join(antiga, "publicacoes.db"))) fs.cpSync(antiga, p, { recursive: true });
+  }
   fs.mkdirSync(p, { recursive: true });
   return p;
 }

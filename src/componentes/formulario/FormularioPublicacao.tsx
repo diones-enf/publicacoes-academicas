@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { api, ErroApi } from "@/componentes/cliente";
 import { CAMPOS_POR_TIPO, IDIOMAS, MOEDAS, PAGADORES, PAPEIS_AUTOR, STATUS, STATUS_SUBMISSOES } from "@/lib/constantes";
 import { localizarAutorPrincipal, papelPadrao } from "@/lib/autoria";
+import { numeroBr } from "@/lib/texto";
 import { formParaApi, type FormPub, type TaxaForm, type TipoOpcao, type VeiculoOpcao } from "./modelo";
 
 interface Duplicata {
@@ -142,7 +143,7 @@ export function FormularioPublicacao({ inicial, tipos, veiculos, principal, id, 
               <input id={`${k}-pag`} type="date" value={t.data_pagamento} onChange={(e) => mudar("data_pagamento", e.target.value)} />
               <div className="ajuda">Vazio = ainda não pago</div>
             </div>
-            {!t.data_pagamento && Number(t.valor.replace(",", ".")) > 0 && (
+            {!t.data_pagamento && (numeroBr(t.valor) ?? 0) > 0 && (
               <div className="campo">
                 <label htmlFor={`${k}-venc`}>Previsão de pagamento</label>
                 <input id={`${k}-venc`} type="date" value={t.data_vencimento} onChange={(e) => mudar("data_vencimento", e.target.value)} />

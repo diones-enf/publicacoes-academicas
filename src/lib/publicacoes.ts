@@ -5,7 +5,7 @@ import { TIPO_TAXA_PUBLICACAO, TIPO_TAXA_SUBMISSAO, STATUS, secaoDoStatus } from
 import { encontrarOuCriarCoautor, localizarAutorPrincipal, papelPadrao } from "./coautores";
 import { prepararLancamento, type Lancamento } from "./custos";
 import { encontrarOuCriarVeiculo, resumoMetricas, type DadosVeiculo } from "./veiculos";
-import { hojeIso, normalizar, normalizarDoi, normalizarIsbn, normalizarIssn, similaridade } from "./texto";
+import { hojeIso, normalizar, normalizarDoi, normalizarIsbn, normalizarIssn, numeroBr, similaridade } from "./texto";
 import type { Metadados } from "./conectores/tipos";
 import { tipoDoDono } from "./tipos";
 
@@ -174,9 +174,9 @@ function validar(donoId: number, d: DadosPublicacao) {
     ["taxa de submissão", d.taxa_submissao],
     ["taxa de publicação (APC)", d.taxa_publicacao],
   ] as const) {
-    if (!t || (!t.nao_sei && (t.valor === null || t.valor === undefined || Number.isNaN(Number(t.valor)))))
+    if (!t || (!t.nao_sei && numeroBr(t.valor) === null))
       throw new ErroValidacao(`Informe a ${rotulo} (use 0 se for gratuita) ou marque "Ainda não sei".`);
-    if (!t.nao_sei && Number(t.valor) < 0) throw new ErroValidacao(`A ${rotulo} não pode ser negativa.`);
+    if (!t.nao_sei && (numeroBr(t.valor) ?? 0) < 0) throw new ErroValidacao(`A ${rotulo} não pode ser negativa.`);
   }
 }
 
@@ -298,7 +298,7 @@ async function prepararTaxas(d: DadosPublicacao) {
       nao_sei: false,
       linha: await prepararLancamento({
         tipo,
-        valor: Number(t.valor),
+        valor: numeroBr(t.valor) as number,
         moeda: t.moeda,
         data_pagamento: t.data_pagamento,
         data_vencimento: t.data_vencimento,

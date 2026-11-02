@@ -22,7 +22,7 @@ foi feito e o que fica para as fases 2 e 3).
 
 Se o Windows mostrar "O Windows protegeu o computador", clique em **Mais informações → Executar assim mesmo**.
 
-Ao baixar uma versão nova do sistema, copie a pasta `dados` da versão antiga para a nova (é onde ficam suas informações).
+Seus dados ficam em `Documentos\Publicacoes-Academicas-dados`, fora da pasta do sistema. Ao baixar uma versão nova, basta extrair e clicar em INICIAR: os dados continuam lá.
 
 ---
 
@@ -92,21 +92,21 @@ na mesma rede Wi-Fi consegue acessá-lo.
 
 ## Onde ficam os dados
 
-Na pasta `dados/`, dentro da pasta do sistema:
+Na pasta `Documentos\Publicacoes-Academicas-dados` (fora da pasta do sistema, para não se perderem ao atualizar). Versões antigas guardavam em `dados/` dentro da pasta do sistema; ao abrir a versão nova pela primeira vez, essa pasta é copiada automaticamente.
 
 | Arquivo | O que é |
 |---|---|
-| `dados/publicacoes.db` | O banco de dados (tudo o que você cadastrou) |
-| `dados/backups/` | Cópia automática diária dos últimos 30 dias |
-| `dados/chave-secreta.txt` | Chave que protege o CPF. **Não apague**: sem ela o login para de funcionar |
+| `publicacoes.db` | O banco de dados (tudo o que você cadastrou) |
+| `backups/` | Cópia automática diária dos últimos 30 dias |
+| `chave-secreta.txt` | Chave que protege o CPF. **Não apague**: sem ela o login para de funcionar |
 
 **Backup fora do notebook (recomendado):** crie um arquivo `.env` na pasta do
 sistema (copie o `.env.example`) e preencha `PASTA_BACKUP_EXTRA` com uma pasta
 do OneDrive ou do Google Drive. O backup diário passa a ser copiado para lá.
 Em **Configurações** também há "Exportar tudo" em JSON e XLSX.
 
-**Trocar de computador:** copie a pasta `dados/` inteira para a pasta do
-sistema no computador novo.
+**Trocar de computador:** copie a pasta `Publicacoes-Academicas-dados` inteira
+para Documentos no computador novo.
 
 ---
 

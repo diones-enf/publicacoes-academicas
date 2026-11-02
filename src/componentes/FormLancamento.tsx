@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { api } from "./cliente";
 import { MOEDAS, PAGADORES, TIPOS_CUSTO } from "@/lib/constantes";
+import { numeroBr } from "@/lib/texto";
 
 export interface LancamentoEdicao {
   id?: number;
@@ -29,7 +30,7 @@ export function FormLancamento({ publicacaoId, inicial, aoFechar }: { publicacao
     e.preventDefault();
     setErro("");
     setEnviando(true);
-    const num = (v: string) => (v === "" ? null : Number(v.replace(",", ".")));
+    const num = (v: string) => numeroBr(v);
     const corpo = {
       publicacao_id: publicacaoId ?? null,
       tipo: l.tipo,

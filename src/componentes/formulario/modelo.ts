@@ -1,5 +1,6 @@
 // Modelo do formulário de publicação e conversões (dados da busca -> formulário -> API).
 import type { Metadados } from "@/lib/conectores/tipos";
+import { numeroBr } from "@/lib/texto";
 
 export interface TipoOpcao {
   id: number;
@@ -153,9 +154,7 @@ export function formDeMetadados(
 }
 
 function n(v: string): number | null {
-  if (v === "" || v === null || v === undefined) return null;
-  const x = Number(String(v).replace(",", "."));
-  return Number.isFinite(x) ? x : null;
+  return numeroBr(v);
 }
 
 function taxaParaApi(t: TaxaForm) {

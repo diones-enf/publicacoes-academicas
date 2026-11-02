@@ -2,7 +2,7 @@
 // pagador, rateio e compromissos futuros (taxas ainda não pagas).
 import { executar, inserir, todos, um } from "./db";
 import { cotacaoPtax } from "./conectores/ptax";
-import { hojeIso } from "./texto";
+import { hojeIso, numeroBr } from "./texto";
 
 export interface DadosLancamento {
   publicacao_id?: number | null;
@@ -40,13 +40,17 @@ function arred(v: number): number {
 }
 
 export async function prepararLancamento(d: DadosLancamento) {
-  if (d.valor === null || d.valor === undefined || Number.isNaN(Number(d.valor)))
-    throw new Error("Informe o valor (use 0 para gratuito).");
-  const valor = Number(d.valor);
+  const valorLido = numeroBr(d.valor);
+  if (valorLido === null) throw new Error("Informe o valor (use 0 para gratuito).");
+  const valor = valorLido;
   if (valor < 0) throw new Error("O valor não pode ser negativo.");
   const moeda = (d.moeda || "BRL").toUpperCase();
-  const parte = d.parte_autor === null || d.parte_autor === undefined || (d.parte_autor as unknown) === "" ? valor : Number(d.parte_autor);
-  if (parte > valor) throw new Error("A parte paga pelo autor não pode ser maior que o valor total.");
+  const parte = numeroBr(d.parte_autor) ?? valor;
+  if (parte < 0) throw new Error("A sua parte não pode ser negativa.");
+  if (parte > valor)
+    throw new Error(
+      `A sua parte (${parte.toLocaleString("pt-BR")}) não pode ser maior que o valor total (${valor.toLocaleString("pt-BR")}). Use ponto só para milhar e vírgula para centavos, ex.: 1.200,50.`,
+    );
   const pagamento = d.data_pagamento || null;
   const competencia = d.competencia || (pagamento ?? d.data_vencimento ?? hojeIso()).slice(0, 7);
   if (!/^\d{4}-\d{2}$/.test(competencia)) throw new Error("Competência inválida (use mês/ano).");

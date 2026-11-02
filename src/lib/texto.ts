@@ -233,3 +233,18 @@ export function quadrienio(ano: number): string {
   const inicio = 2017 + Math.floor((ano - 2017) / 4) * 4;
   return `${inicio}-${inicio + 3}`;
 }
+
+/**
+ * Lê valores no formato brasileiro: "1.200" = mil e duzentos, "1.200,50",
+ * "980,00", "R$ 35". Devolve null se vazio ou inválido.
+ */
+export function numeroBr(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  let t = String(v).replace(/R\$|\s/g, "").trim();
+  if (!t) return null;
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}

@@ -31,3 +31,17 @@ describe("texto", () => {
     expect(quadrienio(2019)).toBe("2017-2020");
   });
 });
+
+import { numeroBr } from "@/lib/texto";
+describe("valores no formato brasileiro", () => {
+  it("entende ponto de milhar e vírgula de centavos", () => {
+    expect(numeroBr("1.200")).toBe(1200);
+    expect(numeroBr("1.200,50")).toBe(1200.5);
+    expect(numeroBr("980,00")).toBe(980);
+    expect(numeroBr("R$ 35")).toBe(35);
+    expect(numeroBr("0")).toBe(0);
+    expect(numeroBr("12.5")).toBe(12.5);
+    expect(numeroBr("")).toBeNull();
+    expect(numeroBr("abc")).toBeNull();
+  });
+});
