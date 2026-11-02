@@ -20,6 +20,12 @@ if errorlevel 1 (
   exit /b
 )
 
+rem Desliga uma versao antiga que ainda esteja ligada (porta 3000)
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr /r /c:":3000 .*LISTENING"') do (
+  echo  Desligando uma versao do sistema que ja estava aberta...
+  taskkill /F /PID %%p >nul 2>nul
+)
+
 if not exist "node_modules\" (
   echo  Primeira vez: preparando o sistema. Isso leva de 1 a 3 minutos...
   echo.

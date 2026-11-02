@@ -98,13 +98,13 @@ export default async function Relatorio({ params, searchParams }: { params: Prom
             ) : (
               <div className="tabela-rolagem">
                 <table>
-                  <thead><tr>{t.colunas.map((c, i) => <th key={i} className={t.moeda?.includes(i) ? "num" : undefined}>{c}</th>)}</tr></thead>
+                  <thead><tr>{t.colunas.map((c, i) => <th key={i} className={i > 0 && (t.moeda?.includes(i) || typeof t.linhas[0]?.[i] === "number") ? "num" : undefined}>{c}</th>)}</tr></thead>
                   <tbody>
                     {t.linhas.map((l, i) => (
-                      <tr key={i}>{l.map((c, j) => <td key={j} className={t.moeda?.includes(j) || typeof c === "number" ? "num" : undefined}>{t.moeda?.includes(j) && typeof c === "number" ? reais(c) : c}</td>)}</tr>
+                      <tr key={i}>{l.map((c, j) => <td key={j} className={j > 0 && (t.moeda?.includes(j) || typeof c === "number") ? "num" : undefined}>{t.moeda?.includes(j) && typeof c === "number" ? reais(c) : c}</td>)}</tr>
                     ))}
                     {t.totais && (
-                      <tr className="total">{t.totais.map((c, j) => <td key={j} className={t.moeda?.includes(j) ? "num" : undefined}>{t.moeda?.includes(j) && typeof c === "number" ? reais(c) : c}</td>)}</tr>
+                      <tr className="total">{t.totais.map((c, j) => <td key={j} className={j > 0 && (t.moeda?.includes(j) || typeof c === "number") ? "num" : undefined}>{t.moeda?.includes(j) && typeof c === "number" ? reais(c) : c}</td>)}</tr>
                     )}
                   </tbody>
                 </table>

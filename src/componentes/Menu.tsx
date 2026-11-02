@@ -50,6 +50,7 @@ export function Menu({ nome, perfil, lembretes }: { nome: string; perfil: string
       </nav>
       <div className="rodape-menu">
         <div>{nome}</div>
+        <div style={{ fontSize: "0.75rem", marginTop: 4 }}>Versão {process.env.NEXT_PUBLIC_VERSAO}</div>
         <button className="secundario pequeno" onClick={sair}>Sair</button>
       </div>
     </aside>
