@@ -25,8 +25,8 @@ export function aplicarListasOficiais(donoId: number, veiculoId: number): string
   const v = veiculoDoDono(donoId, veiculoId);
   if (!v) return [];
   const issns = issnsDe(v);
-  if (!issns.length) return [];
-  const marc = issns.map(() => "?").join(",");
+  // Sem ISSN, a consulta por ISSN não acha nada e o sistema tenta pelo nome da revista.
+  const marc = issns.length ? issns.map(() => "?").join(",") : "NULL";
   const achados: string[] = [];
 
   const qualis = todos<{ area: string; estrato: string; periodo: string }>(
@@ -82,8 +82,9 @@ export async function buscarMetricasAutomaticas(donoId: number, veiculoId: numbe
   const v = veiculoDoDono(donoId, veiculoId);
   if (!v) return { encontrados: [], avisos: ["Revista não encontrada."] };
   const issns = issnsDe(v);
-  if (!issns.length) return { encontrados: [], avisos: ["A revista não tem ISSN cadastrado: informe o ISSN para buscar as métricas."] };
   const encontrados = aplicarListasOficiais(donoId, veiculoId);
+  if (!issns.length)
+    return { encontrados, avisos: ["A revista não tem ISSN cadastrado: informe o ISSN para buscar Scopus, OpenAlex e indexações."] };
   const avisos: string[] = [];
 
   // Scopus via SCImago
