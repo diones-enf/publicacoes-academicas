@@ -53,7 +53,7 @@ export default async function Lista({ searchParams }: { searchParams: Promise<Re
                   <span>{p.subtipo ?? p.tipo}</span>
                   {(p.veiculo || p.evento) && <span>{p.veiculo ?? p.evento}</span>}
                   {p.ano && <span>{p.ano}</span>}
-                  {p.metricas?.qualis && <span className="selo">Qualis {p.metricas.qualis}</span>}
+                  {p.metricas?.qualis ? <span className="selo verde">Qualis {p.metricas.qualis}{p.metricas.qualis_area ? ` · ${p.metricas.qualis_area}` : ""}</span> : p.tipo_chave === "artigo" ? <span className="selo amarelo">sem Qualis</span> : null}
                   {p.metricas?.jif !== null && p.metricas?.jif !== undefined && <span className="selo">JIF {p.metricas.jif.toString().replace(".", ",")}</span>}
                   {p.metricas?.quartil_jcr && <span className="selo">JCR {p.metricas.quartil_jcr}</span>}
                   {p.papel_autor && <span>{p.papel_autor}{p.posicao ? ` (${p.posicao}º de ${p.total_autores})` : ""}</span>}

@@ -115,6 +115,18 @@ export default async function Detalhe({ params }: { params: Promise<{ id: string
           <table>
             <tbody>
               {linha("Revista / veículo", p.veiculo_id ? <a href={`/veiculos/${p.veiculo_id}`}>{p.veiculo_nome}</a> : null)}
+              {p.veiculo_id &&
+                linha(
+                  "Classificação Qualis",
+                  metricas.filter((m) => m.indicador === "QUALIS").length ? (
+                    metricas
+                      .filter((m) => m.indicador === "QUALIS")
+                      .map((m) => `${m.valor} — ${m.area ?? "área não informada"}${m.periodo ? ` (${m.periodo})` : ""}`)
+                      .join("; ")
+                  ) : (
+                    <span className="selo amarelo">Sem Qualis cadastrado</span>
+                  ),
+                )}
               {linha("Evento", p.evento_nome ? `${p.evento_nome}${p.evento_edicao ? ` (${p.evento_edicao})` : ""}${p.evento_cidade ? `, ${p.evento_cidade}` : ""}${p.evento_data ? `, ${dataBr(p.evento_data)}` : ""}` : null)}
               {linha("Livro", p.livro_titulo, "livro_titulo")}
               {linha("Organizadores", p.organizadores)}

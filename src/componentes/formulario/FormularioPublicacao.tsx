@@ -255,7 +255,13 @@ export function FormularioPublicacao({ inicial, tipos, veiculos, principal, id, 
                 <datalist id="lista-veiculos">
                   {veiculos.map((v) => <option key={v.id} value={v.nome} />)}
                 </datalist>
-                <div className="ajuda">Escolha uma já cadastrada ou digite uma nova.</div>
+                <div className="ajuda">
+                  {(() => {
+                    const v = veiculos.find((x) => x.nome === f.veiculo_nome);
+                    if (!v) return "Escolha uma já cadastrada ou digite uma nova. Qualis, JCR e indexações são preenchidos sozinhos ao salvar.";
+                    return v.qualis ? <strong>Qualis desta revista: {v.qualis}</strong> : "Revista sem Qualis cadastrado ainda (será buscado ao salvar).";
+                  })()}
+                </div>
               </div>
               {campo("veiculo_editora", "Editora da revista")}
             </div>

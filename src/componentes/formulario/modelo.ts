@@ -16,6 +16,7 @@ export interface VeiculoOpcao {
   issn: string | null;
   eissn: string | null;
   editora: string | null;
+  qualis: string | null; // ex.: "A2 — Enfermagem (2021-2024)"
 }
 
 export interface AutorForm {

@@ -100,3 +100,16 @@ describe("Qualis colado da tela do Sucupira", () => {
     expect(() => importarQualisColado("nada aqui", "2021-2024", "Enfermagem")).toThrow("Não encontrei");
   });
 });
+
+describe("Qualis no artigo e na busca", () => {
+  it("busca livre encontra pelo estrato e pela área do Qualis da revista", async () => {
+    const ctx = await novoAmbiente();
+    await criarPublicacao(ctx, artigo(ctx));
+    await criarPublicacao(ctx, artigo(ctx, { titulo: "Outro artigo qualquer", veiculo: { nome: "Outra revista", issn: "1234-5679" } }));
+    importarQualis(lerCsv(QUALIS), "2021-2024", "q.csv");
+    aplicarListasEmTodas(ctx.donoId);
+    expect(listarPublicacoes(ctx.donoId, { q: "A2" }, "Enfermagem").map((p) => p.titulo)).toEqual(["Cuidados de enfermagem na sepse: revisão integrativa"]);
+    expect(listarPublicacoes(ctx.donoId, { q: "B1" }, "Enfermagem").map((p) => p.titulo)).toEqual(["Outro artigo qualquer"]);
+    expect(listarPublicacoes(ctx.donoId, { q: "qualis enfermagem" }, "Enfermagem")).toHaveLength(2);
+  });
+});

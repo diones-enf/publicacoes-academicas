@@ -85,6 +85,7 @@ export interface LinhaLista {
   total_autores: number;
   autores: string;
   selo_novo: number;
+  busca: string;
   ultima_movimentacao: string | null;
   prazo_resposta: string | null;
   rodada_revisao: number | null;
@@ -153,9 +154,7 @@ export function listarPublicacoes(donoId: number, f: Filtros, areaQualisRef: str
     const st = f.secao === "publicados" ? STATUS_PUBLICADOS : f.secao === "encerrados" ? STATUS_ENCERRADOS : STATUS_SUBMISSOES;
     add(`p.status IN (${st.map(() => "?").join(",")})`, ...st);
   }
-  if (f.q) {
-    for (const termo of normalizar(f.q).split(" ").filter(Boolean)) add("p.busca LIKE ?", `%${termo}%`);
-  }
+  // A busca livre é aplicada depois, porque também procura no Qualis, área e indexações da revista.
   const col = f.data_campo === "submissao" ? "p.data_submissao" : f.data_campo === "aceite" ? "p.data_aceite" : "p.data_publicacao";
   if (f.de) add(`${col} >= ?`, f.de);
   if (f.ate) add(`${col} <= ?`, f.ate);
@@ -197,7 +196,7 @@ export function listarPublicacoes(donoId: number, f: Filtros, areaQualisRef: str
             p.idioma, p.link, p.editora, p.cidade, p.livro_titulo, p.organizadores, p.modalidade, p.premiacao, p.edicao,
             p.veiculo_id, v.nome AS veiculo, v.editora AS veiculo_editora, v.pais AS veiculo_pais,
             e.nome AS evento, e.cidade AS evento_cidade, e.data AS evento_data,
-            p.papel_autor, p.selo_novo, p.ultima_movimentacao, p.prazo_resposta, p.rodada_revisao,
+            p.papel_autor, p.selo_novo, p.busca, p.ultima_movimentacao, p.prazo_resposta, p.rodada_revisao,
             p.taxa_submissao_nao_sei, p.taxa_publicacao_nao_sei,
             (SELECT ordem FROM autoria a WHERE a.publicacao_id = p.id AND a.eh_principal = 1) AS posicao,
             (SELECT COUNT(*) FROM autoria a WHERE a.publicacao_id = p.id) AS total_autores,
@@ -229,6 +228,16 @@ export function listarPublicacoes(donoId: number, f: Filtros, areaQualisRef: str
     metricas: l.veiculo_id ? (metricas.get(l.veiculo_id) ?? null) : null,
     dias_parado: l.ultima_movimentacao ? diasEntre(l.ultima_movimentacao, hoje) : null,
   }));
+
+  if (f.q) {
+    const termos = normalizar(f.q).split(" ").filter(Boolean);
+    out = out.filter((l) => {
+      const m = l.metricas;
+      const extra = m ? normalizar(`${m.qualis ?? ""} qualis ${m.qualis_area ?? ""} ${m.quartil_jcr ?? ""} ${m.quartil_scopus ?? ""} ${m.indexacoes.join(" ")}`) : "";
+      const alvo = ` ${l.busca} ${extra} `;
+      return termos.every((t) => alvo.includes(t));
+    });
+  }
 
   // Filtros que dependem das métricas do veículo
   const q = f.qualis ?? [];
