@@ -179,3 +179,15 @@ describe("índices gratuitos do OpenAlex e Qualis pelo nome", () => {
     expect(p.metricas?.metrica_nao_confirmada).toBe(true);
   });
 });
+
+describe("Qualis pelo nome ignora (ONLINE)", () => {
+  it("Revista Tópicos encontra REVISTA TÓPICOS (ONLINE)", async () => {
+    const ctx = await novoAmbiente();
+    await criarPublicacao(ctx, artigo(ctx, { veiculo: { nome: "Revista Tópicos" } }));
+    importarQualis([["ISSN", "Título", "Estrato"], ["2965-6672", "REVISTA TÓPICOS (ONLINE)", "A2"]], "2021-2024", "classificacoes_publicadas_interdisciplinar_2026_1.xlsx");
+    aplicarListasEmTodas(ctx.donoId);
+    const p = listarPublicacoes(ctx.donoId, {}, "Enfermagem")[0];
+    expect(p.metricas?.qualis).toBe("A2");
+    expect(p.metricas?.qualis_area).toBe("Interdisciplinar");
+  });
+});

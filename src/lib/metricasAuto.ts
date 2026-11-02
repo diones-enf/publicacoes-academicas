@@ -9,7 +9,7 @@ import { carregarScimago } from "./conectores/scimago";
 import { estaNoDoaj, estaNoMedline, estaNoScielo } from "./conectores/indexadores";
 import { revistaOpenAlex } from "./conectores/openalexFonte";
 import { executar, transacao } from "./db";
-import { normalizar } from "./texto";
+import { chaveRevista } from "./texto";
 
 export interface ResultadoMetricas {
   encontrados: string[];
@@ -42,7 +42,7 @@ export function aplicarListasOficiais(donoId: number, veiculoId: number): string
     prepararTitulosQualis();
     const porNome = todos<{ area: string; estrato: string; periodo: string }>(
       "SELECT DISTINCT area, estrato, periodo FROM ref_qualis WHERE titulo_normalizado = ?",
-      normalizar(v.nome),
+      chaveRevista(v.nome),
     );
     for (const q of porNome)
       salvarMetrica(donoId, veiculoId, {
@@ -174,6 +174,6 @@ function prepararTitulosQualis() {
   );
   if (!faltando.length) return;
   transacao(() => {
-    for (const r of faltando) executar("UPDATE ref_qualis SET titulo_normalizado = ? WHERE rowid = ?", normalizar(r.titulo ?? ""), r.rowid);
+    for (const r of faltando) executar("UPDATE ref_qualis SET titulo_normalizado = ? WHERE rowid = ?", chaveRevista(r.titulo), r.rowid);
   });
 }

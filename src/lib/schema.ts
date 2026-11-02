@@ -362,4 +362,7 @@ export const MIGRACOES: string[] = [
   ALTER TABLE ref_qualis ADD COLUMN titulo_normalizado TEXT;
   CREATE INDEX ix_ref_qualis_titulo ON ref_qualis(titulo_normalizado);
   `,
+  /* 5 — nomes recalculados sem "(ONLINE)" etc. */ `
+  UPDATE ref_qualis SET titulo_normalizado = NULL;
+  `,
 ];

@@ -2,7 +2,7 @@
 // de planilhas baixadas pelo usuário. Os nomes das colunas são reconhecidos
 // automaticamente, sem precisar arrumar o arquivo.
 import { executar, inserir, transacao, todos } from "./db";
-import { normalizar, normalizarIssn } from "./texto";
+import { chaveRevista, normalizar, normalizarIssn } from "./texto";
 
 /** Lê CSV com ; ou , e campos entre aspas. */
 export function lerCsv(texto: string): string[][] {
@@ -114,7 +114,7 @@ export function importarQualis(linhas: string[][], periodo: string, nomeArquivo:
       if (!issn || !/^(A[1-4]|B[1-4]|C|NP)$/.test(estrato) || !area) continue;
       executar("DELETE FROM ref_qualis WHERE issn = ? AND area = ? AND periodo = ?", issn, tituloArea(area), p);
       const titulo = c.idx.titulo >= 0 ? l[c.idx.titulo] : null;
-      inserir("ref_qualis", { issn, titulo, titulo_normalizado: titulo ? normalizar(titulo) : null, area: tituloArea(area), estrato, periodo: p });
+      inserir("ref_qualis", { issn, titulo, titulo_normalizado: titulo ? chaveRevista(titulo) : null, area: tituloArea(area), estrato, periodo: p });
       n++;
     }
     inserir("importacao_lista", { tipo: "Qualis", arquivo: nomeArquivo, periodo: p, linhas: n });

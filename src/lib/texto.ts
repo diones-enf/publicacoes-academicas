@@ -248,3 +248,8 @@ export function numeroBr(v: unknown): number | null {
   const n = Number(t);
   return Number.isFinite(n) ? n : null;
 }
+
+/** Nome de revista para comparação: sem "(ONLINE)", "(IMPRESSO)", acentos e caixa. */
+export function chaveRevista(nome: string | null | undefined): string {
+  return normalizar((nome ?? "").replace(/\([^)]*\)/g, " ").replace(/\b(online|impresso|impressa|print)\b/gi, " "));
+}
