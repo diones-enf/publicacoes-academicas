@@ -10,7 +10,7 @@ import { Abrir } from "@/componentes/Painelzinho";
 import { MudarStatus, Ressubmeter } from "@/componentes/MudarStatus";
 import { FormLancamento } from "@/componentes/FormLancamento";
 import { VincularVersao } from "./VincularVersao";
-import { citacoesDaPublicacao } from "@/lib/citacoes";
+import { citacoesDaPublicacao, FONTES_MANUAIS } from "@/lib/citacoes";
 import { FormCitacaoManual } from "@/componentes/Citacoes";
 
 const ROTULOS: Record<string, string> = {
@@ -324,7 +324,7 @@ export default async function Detalhe({ params }: { params: Promise<{ id: string
 
       <section className="cartao" id="citacoes">
         <h2 style={{ marginTop: 0 }}>Citações</h2>
-        <div className="grade grade-3">
+        <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
           {cit.atuais.map((c) => (
             <div key={c.fonte}>
               <div className="suave" style={{ fontSize: "0.9rem" }}>{c.fonte}</div>
@@ -333,8 +333,11 @@ export default async function Detalhe({ params }: { params: Promise<{ id: string
             </div>
           ))}
         </div>
-        <div className="nao-imprimir" style={{ margin: "0.6rem 0" }}>
-          <FormCitacaoManual publicacaoId={id} atual={cit.atuais.find((c) => c.fonte === "Google Acadêmico")?.total ?? null} />
+        <div className="nao-imprimir" style={{ margin: "0.6rem 0", display: "grid", gap: "0.4rem" }}>
+          <small className="suave">Bases sem consulta gratuita: digite o número que aparece em cada uma.</small>
+          {FONTES_MANUAIS.map((f) => (
+            <FormCitacaoManual key={f} publicacaoId={id} fonte={f} atual={cit.atuais.find((c) => c.fonte === f)?.total ?? null} />
+          ))}
         </div>
         {cit.primeira && <p>Primeira citação: <strong>{cit.primeira.length > 4 ? dataBr(cit.primeira) : cit.primeira}</strong></p>}
         {cit.porAno.length > 0 && (

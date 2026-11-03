@@ -89,3 +89,17 @@ describe("14. Rotina mensal grava novo registro sem apagar os anteriores", () =>
     expect(r.avisos.join(" ")).toContain("sem conexão");
   });
 });
+
+describe("Web of Science e Scopus por digitação", () => {
+  it("guardam o número e calculam h por fonte", async () => {
+    const ctx = await novoAmbiente();
+    const a = await criarPublicacao(ctx, artigo(ctx));
+    lancarCitacoesManual(ctx.donoId, a, 3, "Web of Science");
+    lancarCitacoesManual(ctx.donoId, a, 5, "Scopus");
+    const r = resumoCitacoes(ctx.donoId);
+    expect(r.atuais.find((x) => x.fonte === "Web of Science")).toMatchObject({ total: 3, h: 1 });
+    expect(r.atuais.find((x) => x.fonte === "Scopus")).toMatchObject({ total: 5 });
+    expect(r.maisCitadas[0]).toMatchObject({ wos: 3, sc: 5 });
+    expect(() => lancarCitacoesManual(ctx.donoId, a, 1, "Outra")).toThrow("Fonte inválida");
+  });
+});

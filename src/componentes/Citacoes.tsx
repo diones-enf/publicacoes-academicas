@@ -42,22 +42,22 @@ export function BotaoAtualizarCitacoes() {
   );
 }
 
-export function FormCitacaoManual({ publicacaoId, atual }: { publicacaoId: number; atual: number | null }) {
+export function FormCitacaoManual({ publicacaoId, atual, fonte = "Google Acadêmico" }: { publicacaoId: number; atual: number | null; fonte?: string }) {
   const [total, setTotal] = useState(atual === null ? "" : String(atual));
   const [erro, setErro] = useState("");
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await api("/api/citacoes/manual", "POST", { publicacao_id: publicacaoId, total });
+      await api("/api/citacoes/manual", "POST", { publicacao_id: publicacaoId, total, fonte });
       window.location.reload();
     } catch (er) {
       setErro((er as Error).message);
     }
   }
   return (
-    <form onSubmit={salvar} className="acoes" style={{ flexWrap: "nowrap", maxWidth: 420 }}>
-      <label htmlFor={`gs-${publicacaoId}`} style={{ whiteSpace: "nowrap", margin: 0 }}>Google Acadêmico:</label>
-      <input id={`gs-${publicacaoId}`} inputMode="numeric" value={total} onChange={(e) => setTotal(e.target.value.replace(/\D/g, ""))} placeholder="nº de citações" style={{ width: 130 }} />
+    <form onSubmit={salvar} className="acoes" style={{ flexWrap: "nowrap", maxWidth: 440 }}>
+      <label htmlFor={`cit-${fonte}-${publicacaoId}`} style={{ whiteSpace: "nowrap", margin: 0, minWidth: 130 }}>{fonte}:</label>
+      <input id={`cit-${fonte}-${publicacaoId}`} inputMode="numeric" value={total} onChange={(e) => setTotal(e.target.value.replace(/\D/g, ""))} placeholder="nº de citações" style={{ width: 130 }} />
       <button type="submit" className="secundario pequeno">Salvar</button>
       {erro && <span className="aviso erro">{erro}</span>}
     </form>

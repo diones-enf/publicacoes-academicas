@@ -5,7 +5,9 @@ import { obrasPorDoi, obrasPorTitulo, quemCitou, type ObraCitada } from "./conec
 import { crossrefPorDoi } from "./conectores/crossref";
 import { hojeIso, similaridade } from "./texto";
 
-export const FONTES_CITACAO = ["OpenAlex", "Crossref", "Google Acadêmico"] as const;
+export const FONTES_CITACAO = ["OpenAlex", "Crossref", "Google Acadêmico", "Web of Science", "Scopus"] as const;
+/** Fontes sem consulta pública gratuita: o número é digitado. */
+export const FONTES_MANUAIS = ["Google Acadêmico", "Web of Science", "Scopus"];
 
 export function mesAtual(): string {
   return hojeIso().slice(0, 7);
@@ -197,6 +199,7 @@ export async function atualizarCitacoes(donoId: number, opcoes: { comCitantes?: 
 
 /** Lançamento manual (Google Acadêmico não tem consulta pública). */
 export function lancarCitacoesManual(donoId: number, publicacaoId: number, total: number, fonte = "Google Acadêmico") {
+  if (!FONTES_MANUAIS.includes(fonte)) throw new Error("Fonte inválida.");
   if (!um("SELECT 1 FROM publicacao WHERE id = ? AND dono_id = ?", publicacaoId, donoId)) throw new Error("Publicação não encontrada.");
   if (!Number.isInteger(total) || total < 0) throw new Error("Informe um número inteiro de citações (0 ou mais).");
   registrarCitacoes(donoId, publicacaoId, fonte, total);
@@ -253,14 +256,15 @@ export function resumoCitacoes(donoId: number) {
   );
   const ultimo = (fonte: string) =>
     `(SELECT total FROM citacao_mensal c WHERE c.publicacao_id = p.id AND c.fonte = '${fonte}' ORDER BY mes DESC LIMIT 1)`;
-  const maisCitadas = todos<{ id: number; titulo: string; ano: number | null; doi: string | null; oa: number | null; cr: number | null; gs: number | null }>(
-    `SELECT p.id, p.titulo, p.ano, p.doi, ${ultimo("OpenAlex")} AS oa, ${ultimo("Crossref")} AS cr, ${ultimo("Google Acadêmico")} AS gs
+  const maisCitadas = todos<{ id: number; titulo: string; ano: number | null; doi: string | null; oa: number | null; cr: number | null; gs: number | null; wos: number | null; sc: number | null }>(
+    `SELECT p.id, p.titulo, p.ano, p.doi, ${ultimo("OpenAlex")} AS oa, ${ultimo("Crossref")} AS cr, ${ultimo("Google Acadêmico")} AS gs,
+            ${ultimo("Web of Science")} AS wos, ${ultimo("Scopus")} AS sc
        FROM publicacao p WHERE p.dono_id = ? AND p.status IN ('Publicado', 'Apresentado')
       ORDER BY COALESCE(oa, 0) DESC, COALESCE(cr, 0) DESC, COALESCE(gs, 0) DESC, p.ano DESC`,
     donoId,
   );
   const ultimaAtualizacao = um<{ em: string }>(
-    "SELECT MAX(registrado_em) AS em FROM citacao_mensal c JOIN publicacao p ON p.id = c.publicacao_id WHERE p.dono_id = ? AND c.fonte != 'Google Acadêmico'",
+    "SELECT MAX(registrado_em) AS em FROM citacao_mensal c JOIN publicacao p ON p.id = c.publicacao_id WHERE p.dono_id = ? AND c.fonte IN ('OpenAlex', 'Crossref')",
     donoId,
   )?.em;
   return { atuais, serie, porAno, maisCitadas, ultimaAtualizacao: ultimaAtualizacao ?? null };

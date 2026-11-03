@@ -19,14 +19,14 @@ export default async function Citacoes() {
       </div>
       <p className="suave">
         As citações são buscadas sozinhas uma vez por mês (OpenAlex e Crossref, gratuitos) e cada mês fica guardado, para mostrar a evolução.
-        O Google Acadêmico não tem consulta pública: lance o número à mão na página de cada publicação.
+        Google Acadêmico, Web of Science e Scopus não têm consulta gratuita: lance o número à mão na página de cada publicação (seção Citações).
         {r.ultimaAtualizacao ? ` Última busca: ${dataBr(r.ultimaAtualizacao.slice(0, 10))}.` : ""}
       </p>
       {vazio ? (
         <div className="aviso info">Ainda não há citações registradas. Clique em <strong>Atualizar citações agora</strong>.</div>
       ) : (
         <>
-          <div className="grade grade-4">
+          <div className="grade grade-3">
             {r.atuais.map((a) => (
               <div key={a.fonte} className="cartao indicador">
                 <div className="rotulo">{a.fonte}</div>
@@ -64,7 +64,7 @@ export default async function Citacoes() {
       <section className="cartao tabela-rolagem">
         <h2 style={{ marginTop: 0 }}>Publicações mais citadas</h2>
         <table>
-          <thead><tr><th>Publicação</th><th>Ano</th><th className="num">OpenAlex</th><th className="num">Crossref</th><th className="num">Google Acadêmico</th></tr></thead>
+          <thead><tr><th>Publicação</th><th>Ano</th><th className="num">OpenAlex</th><th className="num">Crossref</th><th className="num">Google Acadêmico</th><th className="num">Web of Science</th><th className="num">Scopus</th></tr></thead>
           <tbody>
             {r.maisCitadas.map((p) => (
               <tr key={p.id}>
@@ -73,6 +73,8 @@ export default async function Citacoes() {
                 <td className="num">{p.oa ?? "—"}</td>
                 <td className="num">{p.cr ?? "—"}</td>
                 <td className="num">{p.gs ?? "—"}</td>
+                <td className="num">{p.wos ?? "—"}</td>
+                <td className="num">{p.sc ?? "—"}</td>
               </tr>
             ))}
           </tbody>
