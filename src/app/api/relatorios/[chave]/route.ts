@@ -2,6 +2,7 @@ import { rota } from "@/lib/api";
 import { filtrosDaUrl } from "@/lib/filtros";
 import { gerarRelatorio, type OpcoesRelatorio } from "@/lib/relatorios";
 import { relatorioCsv, relatorioXlsx } from "@/lib/exportar";
+import { relatorioPdf } from "@/lib/pdf";
 import { cabecalhoRelatorio } from "@/lib/cabecalho";
 import { areaReferencia } from "@/lib/sessao";
 import { hojeIso } from "@/lib/texto";
@@ -21,6 +22,12 @@ export const GET = rota(
     if (!r) return Response.json({ erro: "Relatório não encontrado." }, { status: 404 });
     const cab = cabecalhoRelatorio(usuario, f, o, params.chave);
     const nome = `relatorio-${params.chave}-${hojeIso()}`;
+    if (u.searchParams.get("formato") === "pdf") {
+      const buf = await relatorioPdf(r, cab);
+      return new Response(new Uint8Array(buf), {
+        headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${nome}.pdf"` },
+      });
+    }
     if (u.searchParams.get("formato") === "xlsx") {
       const buf = await relatorioXlsx(r, cab);
       return new Response(new Uint8Array(buf), {

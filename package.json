@@ -1,6 +1,6 @@
 {
   "name": "publicacoes-academicas",
-  "version": "17",
+  "version": "18",
   "private": true,
   "description": "Sistema local de controle de publicações acadêmicas",
   "engines": {
@@ -20,12 +20,14 @@
     "jszip": "3.10.2",
     "next": "16.4.2",
     "nodemailer": "10.1.4",
+    "pdfkit": "0.19.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@types/node": "22.18.0",
     "@types/nodemailer": "7.0.1",
+    "@types/pdfkit": "0.17.7",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
     "typescript": "5.9.2",

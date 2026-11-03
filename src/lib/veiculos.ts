@@ -322,3 +322,66 @@ export function alertasDoVeiculo(v: Veiculo, ms: Metrica[], ix: Indexacao[]): st
     a.push("Revista da coleção ESCI: só tem JIF a partir do JCR 2023 (dados de 2022).");
   return a;
 }
+
+// ---------- Resumo: revistas e publicações por área e estrato Qualis ----------
+
+export interface LinhaQualisResumo {
+  area: string;
+  estrato: string;
+  periodo: string | null;
+  revistas: number;
+  publicacoes: number;
+  nomes: string;
+}
+
+export function resumoRevistasPorQualis(donoId: number, areaRef: string | null = null) {
+  // Qualis mais recente de cada revista em cada área
+  const linhas = todos<{ veiculo_id: number; nome: string; area: string; estrato: string; periodo: string | null; pubs: number }>(
+    `SELECT v.id AS veiculo_id, v.nome, COALESCE(m.area, 'Área não informada') AS area, m.valor AS estrato, m.periodo,
+            (SELECT COUNT(*) FROM publicacao p WHERE p.veiculo_id = v.id) AS pubs
+       FROM veiculo v JOIN metrica_veiculo m ON m.veiculo_id = v.id AND m.indicador = 'QUALIS'
+      WHERE v.dono_id = ? AND COALESCE(m.periodo, '') = (
+        SELECT COALESCE(MAX(m2.periodo), '') FROM metrica_veiculo m2
+         WHERE m2.veiculo_id = v.id AND m2.indicador = 'QUALIS' AND COALESCE(m2.area, '') = COALESCE(m.area, ''))`,
+    donoId,
+  );
+  const ordem = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "C"];
+  const grupos = new Map<string, LinhaQualisResumo>();
+  for (const l of linhas) {
+    const k = `${l.area}|${l.estrato}`;
+    const g = grupos.get(k) ?? { area: l.area, estrato: l.estrato, periodo: l.periodo, revistas: 0, publicacoes: 0, nomes: "" };
+    g.revistas++;
+    g.publicacoes += l.pubs;
+    g.nomes = g.nomes ? `${g.nomes}; ${l.nome}` : l.nome;
+    grupos.set(k, g);
+  }
+  const porArea = [...grupos.values()].sort(
+    (a, b) => a.area.localeCompare(b.area, "pt-BR") || ordem.indexOf(a.estrato) - ordem.indexOf(b.estrato),
+  );
+  const totais = um<{ revistas: number; publicacoes: number; sem_qualis: number; pubs_sem_qualis: number }>(
+    `SELECT COUNT(*) AS revistas,
+            (SELECT COUNT(*) FROM publicacao p WHERE p.dono_id = ?1 AND p.veiculo_id IS NOT NULL) AS publicacoes,
+            SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM metrica_veiculo m WHERE m.veiculo_id = v.id AND m.indicador = 'QUALIS') THEN 1 ELSE 0 END) AS sem_qualis,
+            (SELECT COUNT(*) FROM publicacao p WHERE p.dono_id = ?1 AND p.veiculo_id IN (
+               SELECT v2.id FROM veiculo v2 WHERE v2.dono_id = ?1 AND NOT EXISTS (SELECT 1 FROM metrica_veiculo m WHERE m.veiculo_id = v2.id AND m.indicador = 'QUALIS'))) AS pubs_sem_qualis
+       FROM veiculo v WHERE v.dono_id = ?1`,
+    donoId,
+  ) ?? { revistas: 0, publicacoes: 0, sem_qualis: 0, pubs_sem_qualis: 0 };
+  // Resumo por estrato: cada revista conta UMA vez, pelo Qualis da área de referência
+  // (ou, se não tiver Qualis nessa área, pelo melhor estrato dela).
+  const escolhido = new Map<number, { estrato: string; pubs: number }>();
+  for (const l of linhas) {
+    const atual = escolhido.get(l.veiculo_id);
+    const daRef = !!areaRef && l.area === areaRef;
+    const atualDaRef = !!areaRef && !!atual && linhas.some((x) => x.veiculo_id === l.veiculo_id && x.area === areaRef && x.estrato === atual.estrato);
+    if (!atual || (daRef && !atualDaRef) || (!atualDaRef && !daRef && ordem.indexOf(l.estrato) < ordem.indexOf(atual.estrato)))
+      escolhido.set(l.veiculo_id, { estrato: l.estrato, pubs: l.pubs });
+  }
+  const porEstrato = ordem
+    .map((e) => {
+      const da = [...escolhido.values()].filter((x) => x.estrato === e);
+      return { estrato: e, revistas: da.length, publicacoes: da.reduce((s, x) => s + x.pubs, 0) };
+    })
+    .filter((x) => x.revistas > 0);
+  return { porArea, porEstrato, totais };
+}

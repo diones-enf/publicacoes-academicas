@@ -196,8 +196,10 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .meta { font-size: 0.85rem; color: var(--texto-suave); display: flex; gap: 0.4rem 0.8rem; flex-wrap: wrap; align-items: center; margin-top: 0.15rem; }
 
 /* Kanban */
-.kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem; }
-.coluna-kanban { background: #eceff3; border-radius: var(--raio); padding: 0.6rem; min-height: 200px; }
+.kanban { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; align-items: start; padding-bottom: 0.5rem; }
+.coluna-kanban { background: #eceff3; border-radius: var(--raio); padding: 0.6rem; min-height: 120px; max-height: 75vh; overflow-y: auto; }
+.cartao-kanban .meta { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+.cartao-kanban .item-titulo { display: block; word-break: break-word; }
 .coluna-kanban.sobre { outline: 3px dashed var(--primaria); }
 .coluna-kanban h2 { font-size: 0.95rem; margin: 0 0 0.5rem; display: flex; justify-content: space-between; }
 .cartao-kanban { background: #fff; border: 1px solid var(--borda); border-radius: 6px; padding: 0.55rem; margin-bottom: 0.5rem; cursor: grab; font-size: 0.88rem; }

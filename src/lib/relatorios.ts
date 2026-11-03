@@ -5,6 +5,7 @@ import { listarLancamentos, proximosPagamentos } from "./custos";
 import { rankingCoautores, redeColaboracao } from "./coautores";
 import { referenciaAbnt, referenciaVancouver } from "./referencias";
 import { resumoCitacoes } from "./citacoes";
+import { resumoRevistasPorQualis } from "./veiculos";
 import { competenciaBr, dataBr, diasEntre, reais } from "./texto";
 import { ESTRATOS_QUALIS, STATUS_SUBMISSOES } from "./constantes";
 
@@ -44,6 +45,7 @@ export const RELATORIOS: { chave: string; titulo: string; descricao: string }[] 
   { chave: "livros", titulo: "Livros e capítulos", descricao: "Editora, ISBN, DOI, organizadores e páginas." },
   { chave: "jornais", titulo: "Jornais e divulgação", descricao: "Veículo, data e link." },
   { chave: "indicadores", titulo: "Indicadores do pesquisador", descricao: "Totais por ano, tipo e estrato Qualis, com/sem JCR e % como autor principal." },
+  { chave: "revistas", titulo: "Revistas por Qualis", descricao: "Quantas revistas e publicações em cada estrato Qualis, por área de avaliação." },
   { chave: "qualidade", titulo: "Qualidade dos dados", descricao: "Itens sem DOI, sem Qualis, com métrica não confirmada ou possível duplicata." },
   { chave: "referencias", titulo: "Referências formatadas", descricao: "Lista em ABNT NBR 6023 ou Vancouver, pronta para currículo, edital ou memorial." },
 ];
@@ -439,6 +441,56 @@ function relatorioReferencias(donoId: number, f: Filtros, o: OpcoesRelatorio, ar
 }
 
 export function gerarRelatorio(chave: string, donoId: number, f: Filtros, o: OpcoesRelatorio, area: string | null): Relatorio | null {
+  const r = gerarSemTotais(chave, donoId, f, o, area);
+  if (r) for (const t of r.tabelas) adicionarTotais(t);
+  return r;
+}
+
+/** Colunas que são contagens e podem ser somadas na linha de total. */
+const SOMAVEIS = /^(itens|publica[cç][oõ]es|revistas|total|com jcr|sem jcr|trabalhos em comum)$/i;
+
+/** Acrescenta a linha de total às tabelas que ainda não têm. */
+function adicionarTotais(t: Tabela) {
+  if (t.totais || !t.linhas.length) return;
+  const somar = t.colunas.map((c, i) => i > 0 && (SOMAVEIS.test(c) || !!t.moeda?.includes(i)) && t.linhas.every((l) => typeof l[i] === "number" || l[i] === null));
+  if (somar.some(Boolean)) {
+    t.totais = t.colunas.map((_, i) => (i === 0 ? "Total" : somar[i] ? t.linhas.reduce((s, l) => s + (Number(l[i]) || 0), 0) : ""));
+  } else {
+    t.totais = t.colunas.map((_, i) => (i === 0 ? `Total: ${t.linhas.length} ${t.linhas.length === 1 ? "item" : "itens"}` : ""));
+  }
+}
+
+function relatorioRevistas(donoId: number, area: string | null): Relatorio {
+  const r = resumoRevistasPorQualis(donoId, area);
+  return {
+    chave: "revistas",
+    titulo: "Revistas por Qualis",
+    descricao: "Qualis mais recente de cada revista em cada área. Uma revista com Qualis em várias áreas aparece em cada uma delas.",
+    cartoes: [
+      { rotulo: "Revistas cadastradas", valor: String(r.totais.revistas) },
+      { rotulo: "Publicações nessas revistas", valor: String(r.totais.publicacoes) },
+      { rotulo: "Revistas sem Qualis", valor: String(r.totais.sem_qualis) },
+    ],
+    graficos: r.porEstrato.length
+      ? [{ titulo: "Revistas por estrato (todas as áreas)", rotulos: r.porEstrato.map((e) => e.estrato), series: [{ nome: "Revistas", valores: r.porEstrato.map((e) => e.revistas) }] }]
+      : [],
+    tabelas: [
+      {
+        titulo: "Por área de avaliação e estrato",
+        colunas: ["Área", "Estrato", "Revistas", "Publicações", "Quais revistas"],
+        linhas: r.porArea.map((l) => [l.area, l.estrato, l.revistas, l.publicacoes, l.nomes]),
+      },
+      {
+        titulo: `Por estrato (cada revista uma vez${area ? `, pelo Qualis de ${area}` : ", pelo melhor estrato"})`,
+        colunas: ["Estrato", "Revistas", "Publicações"],
+        linhas: [...r.porEstrato.map((e) => [e.estrato, e.revistas, e.publicacoes] as Celula[]), ["Sem Qualis", r.totais.sem_qualis, r.totais.pubs_sem_qualis]],
+        totais: ["Total", r.totais.revistas, r.totais.publicacoes],
+      },
+    ],
+  };
+}
+
+function gerarSemTotais(chave: string, donoId: number, f: Filtros, o: OpcoesRelatorio, area: string | null): Relatorio | null {
   switch (chave) {
     case "custos":
       return relatorioCustos(donoId, f, o, area);
@@ -458,6 +510,8 @@ export function gerarRelatorio(chave: string, donoId: number, f: Filtros, o: Opc
       return relatorioQualidade(donoId, f, area);
     case "referencias":
       return relatorioReferencias(donoId, f, o, area);
+    case "revistas":
+      return relatorioRevistas(donoId, area);
     default:
       return null;
   }
