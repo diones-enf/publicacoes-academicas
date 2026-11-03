@@ -1,6 +1,6 @@
 // Importação do Lattes com prévia, deduplicação, registro e desfazer.
 import { executar, inserir, todos, transacao, um } from "./db";
-import { criarPublicacao, mesclarDadosExternos, verificarDuplicidade, type Contexto, type DadosPublicacao } from "./publicacoes";
+import { criarPublicacao, mesclarDadosExternos, verificarDuplicidade, vincularVersoes, type Contexto, type DadosPublicacao } from "./publicacoes";
 import { subtipoPorNome, tipoPorChave } from "./tipos";
 import { normalizar, similaridade } from "./texto";
 import type { Metadados } from "./conectores/tipos";
@@ -25,7 +25,7 @@ export function previaLattes(donoId: number, cv: CurriculoLattes): ItemPrevia[] 
     );
     vistos.push(item);
     if (repetido) return { indice, item, situacao: "repetido_no_arquivo", existente: null, acaoPadrao: "pular" };
-    const dups = verificarDuplicidade(donoId, { doi: item.doi, isbn: item.chaveTipo === "capitulo" ? item.isbn : null, titulo: item.titulo, ano: item.ano });
+    const dups = mesmoTipo(donoId, item.chaveTipo, verificarDuplicidade(donoId, { doi: item.doi, isbn: item.chaveTipo === "capitulo" ? item.isbn : null, titulo: item.titulo, ano: item.ano }));
     const d = dups[0];
     if (!d) return { indice, item, situacao: "novo", existente: null, acaoPadrao: "importar" };
     const certo = d.motivo !== "titulo" || d.similaridade >= 0.999;
@@ -44,7 +44,7 @@ function dadosDoItem(ctx: Contexto, cv: CurriculoLattes, it: ItemLattes): DadosP
   const origem: Record<string, string> = {};
   for (const c of ["titulo", "doi", "volume", "numero", "paginas", "idioma", "link", "isbn", "editora", "livro_titulo", "data_publicacao", "autores"])
     origem[c] = "Lattes";
-  const principal = it.autores.findIndex((a) => cv.idLattes && a.idCnpq === cv.idLattes);
+  const principal = it.autores.findIndex((a) => a.ehDono);
   return {
     titulo: it.titulo,
     tipo_id: tipo.id,
@@ -123,7 +123,7 @@ export async function importarLattes(
     try {
       if (acao === "importar") {
         // confere de novo na hora (o mesmo arquivo pode ter itens iguais entre si)
-        const jaTem = verificarDuplicidade(ctx.donoId, { doi: p.item.doi, titulo: p.item.titulo, ano: p.item.ano }).find(
+        const jaTem = mesmoTipo(ctx.donoId, p.item.chaveTipo, verificarDuplicidade(ctx.donoId, { doi: p.item.doi, titulo: p.item.titulo, ano: p.item.ano })).find(
           (d) => d.motivo !== "titulo" || d.similaridade >= 0.999,
         );
         if (jaTem && p.situacao !== "possivel_duplicata") {
@@ -132,6 +132,7 @@ export async function importarLattes(
         }
         const id = await criarPublicacao(ctx, dadosDoItem(ctx, cv, p.item), { ignorarDuplicidade: true });
         inserir("importacao_item", { importacao_id: importacaoId, publicacao_id: id, acao: "criado", titulo: p.item.titulo });
+        ligarVersoes(ctx, id, p.item.titulo);
         criados++;
       } else if (acao === "completar" && p.existente) {
         const r = mesclarDadosExternos(ctx, p.existente.id, metadadosDoItem(p.item));
@@ -209,4 +210,29 @@ export function listarImportacoes(donoId: number) {
     "SELECT id, fonte, arquivo, criados, atualizados, desfeita_em, em FROM importacao WHERE dono_id = ? ORDER BY id DESC",
     donoId,
   );
+}
+
+/** Duplicata só entre itens do mesmo tipo (DOI igual é sempre o mesmo item). */
+function mesmoTipo<T extends { publicacao_id: number; motivo: string }>(donoId: number, chaveTipo: string, dups: T[]): T[] {
+  return dups.filter((d) => {
+    if (d.motivo === "doi") return true;
+    const t = um<{ chave: string }>(
+      "SELECT t.chave FROM publicacao p JOIN tipo_publicacao t ON t.id = p.tipo_id WHERE p.id = ? AND p.dono_id = ?",
+      d.publicacao_id,
+      donoId,
+    );
+    return t?.chave === chaveTipo;
+  });
+}
+
+/** O mesmo trabalho em outro formato (ex.: artigo e apresentação com o mesmo título) fica ligado como versão relacionada. */
+function ligarVersoes(ctx: Contexto, id: number, titulo: string) {
+  const chave = normalizar(titulo);
+  for (const o of todos<{ id: number; titulo_normalizado: string }>(
+    "SELECT id, titulo_normalizado FROM publicacao WHERE dono_id = ? AND id != ? AND tipo_id != (SELECT tipo_id FROM publicacao WHERE id = ?)",
+    ctx.donoId,
+    id,
+    id,
+  ))
+    if (o.titulo_normalizado === chave || similaridade(o.titulo_normalizado, chave) >= 0.95) vincularVersoes(ctx, id, o.id);
 }

@@ -1,6 +1,6 @@
 // Leitura do currículo Lattes (XML exportado pela Plataforma Lattes, solto ou
 // dentro do .zip que o Lattes baixa) e conversão em publicações do sistema.
-import { normalizarDoi, normalizarIsbn, normalizarIssn } from "./texto";
+import { normalizar, normalizarDoi, normalizarIsbn, normalizarIssn } from "./texto";
 
 // ---------- XML mínimo (o Lattes usa quase só atributos) ----------
 
@@ -11,6 +11,17 @@ export interface No {
 }
 
 function decodificar(s: string): string {
+  // O Lattes às vezes codifica duas ou três vezes ("&amp;amp;#45;"): repete até estabilizar.
+  let atual = s;
+  for (let i = 0; i < 4; i++) {
+    const prox = decodificarUmaVez(atual);
+    if (prox === atual) break;
+    atual = prox;
+  }
+  return atual;
+}
+
+function decodificarUmaVez(s: string): string {
   return s
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
@@ -85,6 +96,7 @@ export interface AutorLattes {
   citacao: string;
   ordem: number;
   idCnpq: string;
+  ehDono: boolean; // é a pessoa dona do currículo
 }
 
 export interface ItemLattes {
@@ -142,6 +154,7 @@ function autores(no: No): AutorLattes[] {
       citacao: v(a.attr["NOME-PARA-CITACAO"])?.split(";")[0].trim() ?? "",
       ordem: Number(a.attr["ORDEM-DE-AUTORIA"]) || 0,
       idCnpq: v(a.attr["NRO-ID-CNPQ"]) ?? "",
+      ehDono: false,
     }))
     .filter((a) => a.nome || a.citacao)
     .sort((x, y) => x.ordem - y.ordem);
@@ -366,11 +379,12 @@ export function lerCurriculo(texto: string): CurriculoLattes {
   add(todosOs(cv, "CAPITULO-DE-LIVRO-PUBLICADO"), capitulo);
   add(todosOs(cv, "TEXTO-EM-JORNAL-OU-REVISTA"), textoJornal);
   add(todosOs(cv, "APRESENTACAO-DE-TRABALHO"), apresentacao);
-  return {
-    idLattes: v(cv.attr["NUMERO-IDENTIFICADOR"]) ?? "",
-    nome: v(dg["NOME-COMPLETO"]) ?? "",
-    nomesCitacao: (dg["NOME-EM-CITACOES-BIBLIOGRAFICAS"] ?? "").split(";").map((s) => s.trim()).filter(Boolean),
-    atualizadoEm: dataLattes(cv.attr["DATA-ATUALIZACAO"]),
-    itens,
-  };
+  const idLattes = v(cv.attr["NUMERO-IDENTIFICADOR"]) ?? "";
+  const nome = v(dg["NOME-COMPLETO"]) ?? "";
+  const nomesCitacao = (dg["NOME-EM-CITACOES-BIBLIOGRAFICAS"] ?? "").split(";").map((s) => s.trim()).filter(Boolean);
+  // O Lattes costuma deixar o ID do autor vazio; o nome completo e os nomes em citação identificam a dona do currículo.
+  const meus = new Set([nome, ...nomesCitacao].map((n) => normalizar(n)).filter(Boolean));
+  for (const it of itens)
+    for (const a of it.autores) a.ehDono = (!!idLattes && a.idCnpq === idLattes) || meus.has(normalizar(a.nome)) || meus.has(normalizar(a.citacao));
+  return { idLattes, nome, nomesCitacao, atualizadoEm: dataLattes(cv.attr["DATA-ATUALIZACAO"]), itens };
 }
