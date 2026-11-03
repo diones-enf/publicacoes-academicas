@@ -6,6 +6,7 @@ import { api } from "./cliente";
 const ITENS_AUTOR = [
   { href: "/", rotulo: "Painel" },
   { href: "/publicacoes/nova", rotulo: "+ Nova publicação" },
+  { href: "/importar-lattes", rotulo: "Importar do Lattes" },
   { href: "/publicacoes?secao=publicados", rotulo: "Publicados", base: "/publicacoes" },
   { href: "/submissoes", rotulo: "Submissões" },
   { href: "/veiculos", rotulo: "Revistas e veículos" },

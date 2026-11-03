@@ -1,7 +1,7 @@
 // Formato comum que todo conector devolve. Para incluir uma nova fonte,
 // basta criar um arquivo que devolva Metadados — o resto do sistema não muda.
 
-export type Fonte = "Crossref" | "OpenAlex" | "DataCite" | "ORCID" | "Open Library" | "Manual" | "PDF";
+export type Fonte = "Crossref" | "OpenAlex" | "DataCite" | "ORCID" | "Open Library" | "Manual" | "PDF" | "Lattes";
 
 export interface AutorEncontrado {
   nome: string; // como aparece na fonte: "Daniela R. Rosa" ou "Rosa, D. R."

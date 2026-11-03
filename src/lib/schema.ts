@@ -417,4 +417,24 @@ export const MIGRACOES: string[] = [
     UNIQUE (dono_id, fonte, mes)
   );
   `,
+  /* 7 — Importações (Lattes): registro de cada importação, para poder desfazer */ `
+  CREATE TABLE importacao (
+    id INTEGER PRIMARY KEY,
+    dono_id INTEGER NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+    fonte TEXT NOT NULL,
+    arquivo TEXT,
+    criados INTEGER NOT NULL DEFAULT 0,
+    atualizados INTEGER NOT NULL DEFAULT 0,
+    desfeita_em TEXT,
+    em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE importacao_item (
+    id INTEGER PRIMARY KEY,
+    importacao_id INTEGER NOT NULL REFERENCES importacao(id) ON DELETE CASCADE,
+    publicacao_id INTEGER,
+    acao TEXT NOT NULL,          -- criado | completado
+    campos TEXT,                 -- campos preenchidos (para desfazer)
+    titulo TEXT
+  );
+  `,
 ];
