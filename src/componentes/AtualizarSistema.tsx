@@ -38,7 +38,7 @@ export function AtualizarSistema({ compacto = false }: { compacto?: boolean }) {
       const esperar = async () => {
         try {
           const v = await (await fetch("/api/atualizar", { cache: "no-store" })).json();
-          if (v.instalada === alvo) return window.location.reload();
+          if (v.instalada !== e?.instalada && !v.temNova) return window.location.reload();
         } catch {
           /* ainda religando */
         }

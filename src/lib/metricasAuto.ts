@@ -5,7 +5,7 @@
 import { todos, um } from "./db";
 import { salvarIndexacao, salvarMetrica, veiculoDoDono } from "./veiculos";
 import { normalizarIssn } from "./texto";
-import { carregarScimago } from "./conectores/scimago";
+import { carregarScimago, ultimoErroScimago } from "./conectores/scimago";
 import { estaNoDoaj, estaNoMedline, estaNoScielo } from "./conectores/indexadores";
 import { revistaOpenAlex } from "./conectores/openalexFonte";
 import { executar, transacao } from "./db";
@@ -90,7 +90,7 @@ export async function buscarMetricasAutomaticas(donoId: number, veiculoId: numbe
   // Scopus via SCImago
   try {
     const mapa = await carregarScimago();
-    if (!mapa) avisos.push("Não foi possível baixar a lista do SCImago (Scopus).");
+    if (!mapa) avisos.push(`Scopus/SJR indisponível: ${ultimoErroScimago || "não foi possível baixar a lista do SCImago"}.`);
     else {
       const s = issns.map((i) => mapa.get(i)).find(Boolean);
       if (s) {

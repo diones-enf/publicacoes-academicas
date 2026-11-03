@@ -28,7 +28,7 @@ export default async function Veiculos() {
       <div className="cartao tabela-rolagem">
         <table>
           <thead>
-            <tr><th>Nome</th><th>Tipo</th><th>ISSN / e-ISSN</th><th>Qualis</th><th>JIF</th><th>Quartis</th><th>Indexações</th><th>Conferido</th><th className="num">Publicações</th></tr>
+            <tr><th>Nome</th><th>Tipo</th><th>ISSN / e-ISSN</th><th>Qualis</th><th>JIF</th><th title="Impacto médio de 2 anos (OpenAlex), parecido com o JIF">Impacto OA</th><th>SJR</th><th>Quartis</th><th>Indexações</th><th>Conferido</th><th className="num">Publicações</th></tr>
           </thead>
           <tbody>
             {lista.map((v) => {
@@ -41,6 +41,8 @@ export default async function Veiculos() {
                   <td>{[v.issn, v.eissn].filter(Boolean).join(" / ")}</td>
                   <td>{r?.qualis ? `${r.qualis}${r.qualis_area ? ` (${r.qualis_area})` : ""}` : "—"}</td>
                   <td>{r?.jif ?? "—"}</td>
+                  <td>{r?.impacto2a !== null && r?.impacto2a !== undefined ? String(r.impacto2a).replace(".", ",") : "—"}</td>
+                  <td>{r?.sjr !== null && r?.sjr !== undefined ? String(r.sjr).replace(".", ",") : "—"}</td>
                   <td>{[r?.quartil_jcr && `JCR ${r.quartil_jcr}`, r?.quartil_scopus && `Scopus ${r.quartil_scopus}`].filter(Boolean).join(" · ") || "—"}</td>
                   <td>{r?.indexacoes.join(", ") || "—"}</td>
                   <td>{r?.conferido_em ? <span className={velho ? "selo amarelo" : ""}>{dataBr(r.conferido_em)}</span> : "—"}</td>

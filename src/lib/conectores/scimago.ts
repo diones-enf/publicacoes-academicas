@@ -16,6 +16,8 @@ export interface LinhaScimago {
 }
 
 let cache: { ano: string; mapa: Map<string, LinhaScimago> } | null = null;
+/** Motivo da última falha no download (mostrado ao usuário). */
+export let ultimoErroScimago = "";
 
 function arquivo(ano: string) {
   const p = path.join(pastaDados(), "referencias");
@@ -61,14 +63,20 @@ export async function carregarScimago(): Promise<Map<string, LinhaScimago> | nul
       try {
         const ctrl = new AbortController();
         const t = setTimeout(() => ctrl.abort(), 90000);
-        const r = await fetch(`https://www.scimagojr.com/journalrank.php?out=xls&year=${ano}`, { headers: cabecalhos(), signal: ctrl.signal });
+        const r = await fetch(`https://www.scimagojr.com/journalrank.php?out=xls&year=${ano}`, {
+          headers: {
+            ...cabecalhos(),
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+            Accept: "text/csv,application/vnd.ms-excel,*/*",
+          },
+          signal: ctrl.signal,
+        });
         clearTimeout(t);
-        if (r.ok) {
-          const texto = await r.text();
-          if (texto.toLowerCase().includes("sourceid")) fs.writeFileSync(a, texto);
-        }
-      } catch {
-        /* sem internet: usa o arquivo antigo, se houver */
+        const texto = await r.text();
+        if (r.ok && texto.toLowerCase().includes("sourceid")) fs.writeFileSync(a, texto);
+        else ultimoErroScimago = `o site do SCImago respondeu ${r.status}${texto.toLowerCase().includes("<html") ? " com uma página em vez da lista" : ""}`;
+      } catch (e) {
+        ultimoErroScimago = (e as Error).name === "AbortError" ? "o site do SCImago demorou demais" : "sem conexão com o site do SCImago";
       }
     }
     if (fs.existsSync(a)) {
