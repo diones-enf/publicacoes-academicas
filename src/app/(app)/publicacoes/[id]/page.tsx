@@ -10,6 +10,8 @@ import { Abrir } from "@/componentes/Painelzinho";
 import { MudarStatus, Ressubmeter } from "@/componentes/MudarStatus";
 import { FormLancamento } from "@/componentes/FormLancamento";
 import { VincularVersao } from "./VincularVersao";
+import { citacoesDaPublicacao } from "@/lib/citacoes";
+import { FormCitacaoManual } from "@/componentes/Citacoes";
 
 const ROTULOS: Record<string, string> = {
   titulo: "Título", doi: "DOI", data_publicacao: "Data de publicação", data_aceite: "Data de aceite", volume: "Volume",
@@ -29,6 +31,7 @@ export default async function Detalhe({ params }: { params: Promise<{ id: string
   if (!p) notFound();
 
   const metricas = p.veiculo_id ? metricasDoVeiculo(p.veiculo_id) : [];
+  const cit = citacoesDaPublicacao(id);
   const indexacoes = p.veiculo_id ? indexacoesDoVeiculo(p.veiculo_id) : [];
   const outras = todos<{ id: number; titulo: string; ano: number | null }>(
     "SELECT id, titulo, ano FROM publicacao WHERE dono_id = ? AND id != ? ORDER BY titulo",
@@ -318,6 +321,49 @@ export default async function Detalhe({ params }: { params: Promise<{ id: string
           <VincularVersao id={id} opcoes={outras} />
         </section>
       </div>
+
+      <section className="cartao" id="citacoes">
+        <h2 style={{ marginTop: 0 }}>Citações</h2>
+        <div className="grade grade-3">
+          {cit.atuais.map((c) => (
+            <div key={c.fonte}>
+              <div className="suave" style={{ fontSize: "0.9rem" }}>{c.fonte}</div>
+              <div className="numero" style={{ fontSize: "1.4rem" }}>{c.total ?? "—"}</div>
+              {c.mes && <small>{competenciaBr(c.mes)}</small>}
+            </div>
+          ))}
+        </div>
+        <div className="nao-imprimir" style={{ margin: "0.6rem 0" }}>
+          <FormCitacaoManual publicacaoId={id} atual={cit.atuais.find((c) => c.fonte === "Google Acadêmico")?.total ?? null} />
+        </div>
+        {cit.primeira && <p>Primeira citação: <strong>{cit.primeira.length > 4 ? dataBr(cit.primeira) : cit.primeira}</strong></p>}
+        {cit.porAno.length > 0 && (
+          <p>Por ano (OpenAlex): {cit.porAno.map((a) => `${a.ano}: ${a.total}`).join(" · ")}</p>
+        )}
+        {cit.historico.length > 0 && (
+          <details>
+            <summary>Histórico mensal ({cit.historico.length} registro(s))</summary>
+            <ul>{cit.historico.map((h, i) => <li key={i}>{competenciaBr(h.mes)} — {h.fonte}: {h.total}</li>)}</ul>
+          </details>
+        )}
+        {cit.citantes.length > 0 ? (
+          <details style={{ marginTop: "0.5rem" }}>
+            <summary>Trabalhos que citaram ({cit.citantes.length})</summary>
+            <ol>
+              {cit.citantes.map((c) => (
+                <li key={c.id_externo}>
+                  <a href={c.doi ? `https://doi.org/${c.doi}` : `https://openalex.org/${c.id_externo}`} target="_blank" rel="noreferrer">{c.titulo || "(sem título)"}</a>
+                  {c.revista ? ` — ${c.revista}` : ""}{c.ano ? ` (${c.ano})` : ""}
+                </li>
+              ))}
+            </ol>
+          </details>
+        ) : (
+          cit.atuais.every((c) => c.total === null) && (
+            <p className="suave">Ainda sem dados. Use <a href="/citacoes">Citações → Atualizar citações agora</a>, ou espere a busca automática do mês.</p>
+          )
+        )}
+      </section>
 
       <details className="cartao">
         <summary>Histórico de alterações e origem dos dados</summary>

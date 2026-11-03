@@ -4,6 +4,7 @@ import { listarPublicacoes, possiveisDuplicatas, type Filtros, type LinhaLista }
 import { listarLancamentos, proximosPagamentos } from "./custos";
 import { rankingCoautores, redeColaboracao } from "./coautores";
 import { referenciaAbnt, referenciaVancouver } from "./referencias";
+import { resumoCitacoes } from "./citacoes";
 import { competenciaBr, dataBr, diasEntre, reais } from "./texto";
 import { ESTRATOS_QUALIS, STATUS_SUBMISSOES } from "./constantes";
 
@@ -308,14 +309,16 @@ function relatorioIndicadores(donoId: number, f: Filtros, area: string | null): 
   const comPapel = pubs.filter((p) => p.papel_autor);
   const principal = comPapel.filter((p) => p.papel_autor === "Autor principal").length;
   const estratos = [...ESTRATOS_QUALIS, "Sem Qualis"];
+  const citOA = resumoCitacoes(donoId).atuais.find((a) => a.fonte === "OpenAlex");
   return {
     chave: "indicadores",
     titulo: "Indicadores do pesquisador",
-    descricao: "Considera os itens publicados ou apresentados (ou a seção escolhida no filtro). Citações entram na fase 3.",
+    descricao: "Considera os itens publicados ou apresentados (ou a seção escolhida no filtro). Citações: última foto mensal do OpenAlex.",
     cartoes: [
       { rotulo: "Total", valor: String(pubs.length) },
       { rotulo: "Artigos", valor: String(artigos.length) },
       { rotulo: "Artigos com JCR", valor: String(artigos.filter((p) => p.metricas?.tem_jcr).length) },
+      { rotulo: "Citações (OpenAlex)", valor: citOA?.total !== undefined ? `${citOA.total} · h ${citOA.h} · i10 ${citOA.i10}` : "—" },
       { rotulo: "Como autor principal", valor: comPapel.length ? `${Math.round((principal / comPapel.length) * 100)}%` : "—" },
     ],
     graficos: [{ titulo: "Publicações por ano", rotulos: anos.map(String), series: [{ nome: "Itens", valores: anos.map((a) => pubs.filter((p) => p.ano === a).length) }] }],

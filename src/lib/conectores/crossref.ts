@@ -3,7 +3,7 @@ import { normalizarDoi, normalizarIssn, normalizarOrcid } from "../texto";
 import { buscarJson, dataDePartes, idiomaDeCodigo, semTags, tipoDeCrossref } from "./http";
 import type { Metadados, ResultadoBusca } from "./tipos";
 
-const BASE = "https://api.crossref.org";
+const BASE = process.env.CROSSREF_URL ?? "https://api.crossref.org";
 
 interface CrAutor {
   given?: string;

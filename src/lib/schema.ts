@@ -365,4 +365,56 @@ export const MIGRACOES: string[] = [
   /* 5 — nomes recalculados sem "(ONLINE)" etc. */ `
   UPDATE ref_qualis SET titulo_normalizado = NULL;
   `,
+  /* 6 — Evolução das citações (fase 3) */ `
+  ALTER TABLE publicacao ADD COLUMN openalex_id TEXT;
+
+  -- Foto mensal das citações de cada publicação, por fonte. Nunca é apagada:
+  -- rodar de novo no mesmo mês só atualiza o número daquele mês.
+  CREATE TABLE citacao_mensal (
+    id INTEGER PRIMARY KEY,
+    publicacao_id INTEGER NOT NULL REFERENCES publicacao(id) ON DELETE CASCADE,
+    fonte TEXT NOT NULL,
+    mes TEXT NOT NULL,
+    total INTEGER NOT NULL,
+    registrado_em TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (publicacao_id, fonte, mes)
+  );
+
+  -- Citações recebidas em cada ano (informadas pelo OpenAlex).
+  CREATE TABLE citacao_ano (
+    publicacao_id INTEGER NOT NULL REFERENCES publicacao(id) ON DELETE CASCADE,
+    fonte TEXT NOT NULL,
+    ano INTEGER NOT NULL,
+    total INTEGER NOT NULL,
+    PRIMARY KEY (publicacao_id, fonte, ano)
+  );
+
+  -- Trabalhos que citaram cada publicação.
+  CREATE TABLE trabalho_citante (
+    id INTEGER PRIMARY KEY,
+    publicacao_id INTEGER NOT NULL REFERENCES publicacao(id) ON DELETE CASCADE,
+    fonte TEXT NOT NULL,
+    id_externo TEXT NOT NULL,
+    titulo TEXT,
+    ano INTEGER,
+    data TEXT,
+    doi TEXT,
+    revista TEXT,
+    UNIQUE (publicacao_id, fonte, id_externo)
+  );
+
+  -- Foto mensal dos indicadores do pesquisador (total, índice h e i10) por fonte.
+  CREATE TABLE indicador_mensal (
+    id INTEGER PRIMARY KEY,
+    dono_id INTEGER NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+    fonte TEXT NOT NULL,
+    mes TEXT NOT NULL,
+    total INTEGER NOT NULL,
+    h INTEGER NOT NULL,
+    i10 INTEGER NOT NULL,
+    publicacoes INTEGER NOT NULL,
+    registrado_em TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (dono_id, fonte, mes)
+  );
+  `,
 ];

@@ -10,6 +10,7 @@ const ITENS_AUTOR = [
   { href: "/submissoes", rotulo: "Submissões" },
   { href: "/veiculos", rotulo: "Revistas e veículos" },
   { href: "/coautores", rotulo: "Coautores" },
+  { href: "/citacoes", rotulo: "Citações" },
   { href: "/custos", rotulo: "Custos" },
   { href: "/relatorios", rotulo: "Relatórios" },
   { href: "/configuracoes", rotulo: "Configurações" },

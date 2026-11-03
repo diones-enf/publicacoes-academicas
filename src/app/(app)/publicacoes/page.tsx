@@ -3,6 +3,7 @@ import { contarFiltros, filtrosDaUrl, filtrosParaUrl, listarPublicacoes } from "
 import { opcoesDeFiltro } from "@/lib/opcoesFiltro";
 import { dataBr, reais } from "@/lib/texto";
 import { PainelFiltros } from "@/componentes/PainelFiltros";
+import { citacoesAtuais } from "@/lib/citacoes";
 
 export default async function Lista({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const u = await exigirUsuario("autor");
@@ -10,6 +11,7 @@ export default async function Lista({ searchParams }: { searchParams: Promise<Re
   const sp = await searchParams;
   const f = filtrosDaUrl(sp);
   const lista = listarPublicacoes(ctx.donoId, f, areaReferencia(u));
+  const citacoes = citacoesAtuais(ctx.donoId);
   const secao = f.secao ?? "";
   const semSecao = { ...f, secao: undefined };
   const abas = [
@@ -60,6 +62,7 @@ export default async function Lista({ searchParams }: { searchParams: Promise<Re
                   {p.metricas?.impacto2a !== null && p.metricas?.impacto2a !== undefined && <span className="selo" title="Impacto médio de 2 anos (OpenAlex), parecido com o JIF">Impacto OA {String(p.metricas.impacto2a).replace(".", ",")}</span>}
                   {p.papel_autor && <span>{p.papel_autor}{p.posicao ? ` (${p.posicao}º de ${p.total_autores})` : ""}</span>}
                   {p.n_lancamentos > 0 && <span>{p.custo_total === 0 ? "Gratuito" : reais(p.custo_total)}{p.custo_pendente > 0 ? " (pendente)" : ""}</span>}
+                  {citacoes.has(p.id) && <span className="selo azul">{citacoes.get(p.id)} citação(ões)</span>}
                   {p.doi ? <span>DOI {p.doi}</span> : <span className="selo amarelo">sem DOI</span>}
                   {p.secao === "submissoes" && p.data_submissao && <span>Submetido em {dataBr(p.data_submissao)}</span>}
                 </div>
