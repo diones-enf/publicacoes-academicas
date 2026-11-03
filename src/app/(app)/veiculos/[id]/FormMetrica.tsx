@@ -3,8 +3,16 @@ import { useState } from "react";
 import { api } from "@/componentes/cliente";
 import { AREAS_QUALIS_COMUNS, BASES_INDEXACAO, ESTRATOS_QUALIS, INDICADORES, SELOS } from "@/lib/constantes";
 
-export function FormMetrica({ veiculoId, areaPadrao }: { veiculoId: number; areaPadrao: string | null }) {
-  const [d, setD] = useState({ indicador: "QUALIS", valor: "", area: areaPadrao ?? "", periodo: "2021-2024", selo: "confirmado_oficial", fonte: "", conferido_em: "" });
+export function FormMetrica({ veiculoId, areaPadrao, indicadorInicial = "QUALIS" }: { veiculoId: number; areaPadrao: string | null; indicadorInicial?: string }) {
+  const [d, setD] = useState({
+    indicador: indicadorInicial,
+    valor: "",
+    area: indicadorInicial === "QUALIS" ? (areaPadrao ?? "") : "",
+    periodo: indicadorInicial === "QUALIS" ? "2021-2024" : String(new Date().getFullYear() - 1),
+    selo: "confirmado_oficial",
+    fonte: "",
+    conferido_em: "",
+  });
   const [erro, setErro] = useState("");
   const m = (k: keyof typeof d) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setD({ ...d, [k]: e.target.value });
   const qualis = d.indicador === "QUALIS";
@@ -63,8 +71,8 @@ export function FormMetrica({ veiculoId, areaPadrao }: { veiculoId: number; area
   );
 }
 
-export function FormIndexacao({ veiculoId }: { veiculoId: number }) {
-  const [d, setD] = useState({ base: "SciELO", situacao: "ativa", selo: "confirmado_oficial", fonte: "" });
+export function FormIndexacao({ veiculoId, baseInicial = "SciELO" }: { veiculoId: number; baseInicial?: string }) {
+  const [d, setD] = useState({ base: baseInicial, situacao: "ativa", selo: "confirmado_oficial", fonte: "" });
   const [erro, setErro] = useState("");
   const m = (k: keyof typeof d) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setD({ ...d, [k]: e.target.value });
   async function salvar(e: React.FormEvent) {

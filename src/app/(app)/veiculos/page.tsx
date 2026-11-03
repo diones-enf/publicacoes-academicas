@@ -5,6 +5,13 @@ import { Abrir } from "@/componentes/Painelzinho";
 import { FormVeiculo } from "./FormVeiculo";
 import { BuscarMetricas } from "./BuscarMetricas";
 
+/** Valor da métrica, ou "—" que leva à página da revista para inserir. */
+function celula(id: number, valor: number | string | null | undefined) {
+  if (valor === null || valor === undefined || valor === "")
+    return <a href={`/veiculos/${id}`} title="Não informado: clique para inserir" style={{ textDecoration: "none" }}>—</a>;
+  return String(valor).replace(".", ",");
+}
+
 export default async function Veiculos() {
   const u = await exigirUsuario("autor");
   const { donoId } = contextoDe(u);
@@ -28,7 +35,7 @@ export default async function Veiculos() {
       <div className="cartao tabela-rolagem">
         <table>
           <thead>
-            <tr><th>Nome</th><th>Tipo</th><th>ISSN / e-ISSN</th><th>Qualis</th><th>JIF</th><th title="Impacto médio de 2 anos (OpenAlex), parecido com o JIF">Impacto OA</th><th>SJR</th><th>Quartis</th><th>Indexações</th><th>Conferido</th><th className="num">Publicações</th></tr>
+            <tr><th>Nome</th><th>Tipo</th><th>ISSN / e-ISSN</th><th>Qualis</th><th>JIF</th><th>Quartil JCR</th><th>SJR</th><th>Quartil Scopus</th><th title="Impacto médio de 2 anos (OpenAlex), parecido com o JIF">Impacto OA</th><th>Indexações</th><th>Conferido</th><th className="num">Publicações</th></tr>
           </thead>
           <tbody>
             {lista.map((v) => {
@@ -39,11 +46,12 @@ export default async function Veiculos() {
                   <td><a href={`/veiculos/${v.id}`}>{v.nome}</a></td>
                   <td>{v.tipo}</td>
                   <td>{[v.issn, v.eissn].filter(Boolean).join(" / ")}</td>
-                  <td>{r?.qualis ? `${r.qualis}${r.qualis_area ? ` (${r.qualis_area})` : ""}` : "—"}</td>
-                  <td>{r?.jif ?? "—"}</td>
-                  <td>{r?.impacto2a !== null && r?.impacto2a !== undefined ? String(r.impacto2a).replace(".", ",") : "—"}</td>
-                  <td>{r?.sjr !== null && r?.sjr !== undefined ? String(r.sjr).replace(".", ",") : "—"}</td>
-                  <td>{[r?.quartil_jcr && `JCR ${r.quartil_jcr}`, r?.quartil_scopus && `Scopus ${r.quartil_scopus}`].filter(Boolean).join(" · ") || "—"}</td>
+                  <td>{celula(v.id, r?.qualis ? `${r.qualis}${r.qualis_area ? ` (${r.qualis_area})` : ""}` : null)}</td>
+                  <td>{celula(v.id, r?.jif)}</td>
+                  <td>{celula(v.id, r?.quartil_jcr)}</td>
+                  <td>{celula(v.id, r?.sjr)}</td>
+                  <td>{celula(v.id, r?.quartil_scopus)}</td>
+                  <td>{celula(v.id, r?.impacto2a)}</td>
                   <td>{r?.indexacoes.join(", ") || "—"}</td>
                   <td>{r?.conferido_em ? <span className={velho ? "selo amarelo" : ""}>{dataBr(r.conferido_em)}</span> : "—"}</td>
                   <td className="num">{v.publicacoes}</td>

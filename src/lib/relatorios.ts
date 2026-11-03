@@ -357,6 +357,7 @@ function relatorioQualidade(donoId: number, f: Filtros, area: string | null): Re
   });
   const semDoi = pubs.filter((p) => !p.doi && ["artigo", "capitulo"].includes(p.tipo_chave) && p.secao === "publicados");
   const semQualis = pubs.filter((p) => p.tipo_chave === "artigo" && !p.metricas?.qualis);
+  const semRevista = pubs.filter((p) => (p.tipo_chave === "artigo" || p.tipo_chave === "jornal") && !p.veiculo_id);
   const naoConf = pubs.filter((p) => p.metricas?.metrica_nao_confirmada);
   const velhas = pubs.filter((p) => p.veiculo_id && p.metricas && (!p.metricas.conferido_em || p.metricas.conferido_em < limite));
   const semPrincipal = pubs.filter((p) => p.total_autores > 0 && !p.posicao);
@@ -374,6 +375,7 @@ function relatorioQualidade(donoId: number, f: Filtros, area: string | null): Re
     ],
     graficos: [],
     tabelas: [
+      lista("Artigos sem revista ligada (não recebem Qualis, JCR nem Scopus)", semRevista),
       lista("Publicados sem DOI", semDoi),
       lista("Artigos sem Qualis", semQualis),
       lista("Com métrica não confirmada na fonte oficial", naoConf),

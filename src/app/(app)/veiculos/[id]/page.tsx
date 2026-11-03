@@ -10,6 +10,8 @@ import { FormVeiculo } from "../FormVeiculo";
 import { BuscarMetricas } from "../BuscarMetricas";
 import { FormIndexacao, FormMetrica } from "./FormMetrica";
 
+const PRINCIPAIS = ["QUALIS", "JIF", "JIF5", "JCI", "QUARTIL_JCR", "COLECAO_WOS", "SJR", "QUARTIL_SCOPUS", "CITESCORE", "IMPACTO_2A_OPENALEX", "H_OPENALEX", "H5", "APC_USD"];
+const BASES_PRINCIPAIS = ["Scopus", "WoS SCIE", "WoS SSCI", "WoS ESCI", "SciELO", "PubMed/MEDLINE", "LILACS", "BDENF", "DOAJ", "Latindex"];
 const nomeIndicador = (c: string) => INDICADORES.find((i) => i.chave === c)?.nome ?? c;
 const classeSelo = (s: string) => (s === "confirmado_oficial" ? "verde" : s === "nao_localizado" ? "vermelho" : "amarelo");
 
@@ -47,51 +49,92 @@ export default async function Veiculo({ params }: { params: Promise<{ id: string
         </div>
       </div>
       {alertas.map((a, i) => <div key={i} className="aviso atencao">{a}</div>)}
-      <div className="grade grade-2">
-        <section className="cartao">
-          <div className="topo"><h2 style={{ margin: 0 }}>Métricas</h2><Abrir rotulo="+ Métrica" titulo="Nova métrica" classe="pequeno"><FormMetrica veiculoId={id} areaPadrao={u.area_qualis_ref} /></Abrir></div>
-          {metricas.length === 0 ? <p className="suave">Nenhuma métrica.</p> : (
-            <div className="tabela-rolagem">
-              <table>
-                <thead><tr><th>Indicador</th><th>Valor</th><th>Área / categoria</th><th>Período</th><th>Selo</th><th>Conferido</th><th></th></tr></thead>
-                <tbody>
-                  {metricas.map((m) => (
-                    <tr key={m.id}>
-                      <td>{nomeIndicador(m.indicador)}</td>
-                      <td><strong>{m.valor.replace(".", ",")}</strong></td>
-                      <td>{m.area}</td>
-                      <td>{m.periodo}</td>
-                      <td><span className={`selo ${classeSelo(m.selo)}`}>{SELOS[m.selo]}</span>{m.fonte ? <small> · {m.fonte}</small> : null}</td>
-                      <td>{dataBr(m.conferido_em)}</td>
-                      <td><BotaoAcao url={`/api/metricas/${m.id}`} metodo="DELETE" rotulo="✕" confirmar="Excluir esta métrica?" /></td>
+      <section className="cartao">
+        <div className="topo">
+          <h2 style={{ margin: 0 }}>Métricas</h2>
+          <Abrir rotulo="+ Outra métrica" titulo="Nova métrica" classe="secundario pequeno"><FormMetrica veiculoId={id} areaPadrao={u.area_qualis_ref} /></Abrir>
+        </div>
+        <div className="tabela-rolagem">
+          <table>
+            <thead><tr><th>Métrica</th><th>Valor</th><th>Área / categoria</th><th>Período</th><th>Selo e fonte</th><th>Conferido</th><th></th></tr></thead>
+            <tbody>
+              {PRINCIPAIS.map((ind) => {
+                const lista = metricas.filter((m) => m.indicador === ind);
+                if (!lista.length)
+                  return (
+                    <tr key={ind}>
+                      <td>{nomeIndicador(ind)}</td>
+                      <td className="suave">não informado</td>
+                      <td></td><td></td><td></td><td></td>
+                      <td><Abrir rotulo="Inserir" titulo={`Inserir ${nomeIndicador(ind)}`} classe="pequeno"><FormMetrica veiculoId={id} areaPadrao={u.area_qualis_ref} indicadorInicial={ind} /></Abrir></td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="ajuda suave" style={{ marginTop: "0.5rem" }}>
-            Nunca marque como &quot;Confirmado na fonte oficial&quot; um dado que só a revista informou. Para o Qualis e o JCR, importe as listas oficiais
-            em <a href="/veiculos/importar">Importar Qualis e JCR</a>.
-          </p>
-        </section>
-        <section className="cartao">
-          <div className="topo"><h2 style={{ margin: 0 }}>Indexações</h2><Abrir rotulo="+ Indexação" titulo="Nova indexação" classe="pequeno"><FormIndexacao veiculoId={id} /></Abrir></div>
-          {indexacoes.length === 0 ? <p className="suave">Nenhuma indexação.</p> : (
-            <ul className="lista-itens">
-              {indexacoes.map((i) => (
-                <li key={i.id} className="acoes" style={{ justifyContent: "space-between" }}>
-                  <span>
-                    <strong>{i.base}</strong> {i.situacao === "interrompida" && <span className="selo vermelho">interrompida</span>}{" "}
-                    <span className={`selo ${classeSelo(i.selo)}`}>{SELOS[i.selo]}</span> <small>{dataBr(i.conferido_em)}</small>
-                  </span>
-                  <BotaoAcao url={`/api/indexacoes/${i.id}`} metodo="DELETE" rotulo="✕" confirmar="Excluir esta indexação?" />
-                </li>
+                  );
+                return lista.map((m, k) => (
+                  <tr key={m.id}>
+                    <td>{k === 0 ? nomeIndicador(ind) : ""}</td>
+                    <td><strong>{m.valor.replace(".", ",")}</strong></td>
+                    <td>{m.area}</td>
+                    <td>{m.periodo}</td>
+                    <td><span className={`selo ${classeSelo(m.selo)}`}>{SELOS[m.selo]}</span>{m.fonte ? <small> · {m.fonte}</small> : null}</td>
+                    <td>{dataBr(m.conferido_em)}</td>
+                    <td className="acoes">
+                      {k === 0 && <Abrir rotulo="+" titulo={`Inserir ${nomeIndicador(ind)}`} classe="secundario pequeno"><FormMetrica veiculoId={id} areaPadrao={u.area_qualis_ref} indicadorInicial={ind} /></Abrir>}
+                      <BotaoAcao url={`/api/metricas/${m.id}`} metodo="DELETE" rotulo="✕" confirmar="Excluir esta métrica?" />
+                    </td>
+                  </tr>
+                ));
+              })}
+              {metricas.filter((m) => !PRINCIPAIS.includes(m.indicador)).map((m) => (
+                <tr key={m.id}>
+                  <td>{nomeIndicador(m.indicador)}</td>
+                  <td><strong>{m.valor.replace(".", ",")}</strong></td>
+                  <td>{m.area}</td>
+                  <td>{m.periodo}</td>
+                  <td><span className={`selo ${classeSelo(m.selo)}`}>{SELOS[m.selo]}</span>{m.fonte ? <small> · {m.fonte}</small> : null}</td>
+                  <td>{dataBr(m.conferido_em)}</td>
+                  <td><BotaoAcao url={`/api/metricas/${m.id}`} metodo="DELETE" rotulo="✕" confirmar="Excluir esta métrica?" /></td>
+                </tr>
               ))}
-            </ul>
-          )}
-        </section>
-      </div>
+            </tbody>
+          </table>
+        </div>
+        <p className="ajuda suave" style={{ marginTop: "0.5rem" }}>
+          Nunca marque como &quot;Confirmado na fonte oficial&quot; um dado que só a revista informou. Para importar listas inteiras, use{" "}
+          <a href="/veiculos/importar">Importar Qualis e JCR</a>.
+        </p>
+      </section>
+
+      <section className="cartao">
+        <div className="topo">
+          <h2 style={{ margin: 0 }}>Indexações</h2>
+          <Abrir rotulo="+ Outra base" titulo="Nova indexação" classe="secundario pequeno"><FormIndexacao veiculoId={id} /></Abrir>
+        </div>
+        <div className="tabela-rolagem">
+          <table>
+            <thead><tr><th>Base</th><th>Situação</th><th>Selo e fonte</th><th>Conferido</th><th></th></tr></thead>
+            <tbody>
+              {[...BASES_PRINCIPAIS, ...indexacoes.map((i) => i.base).filter((b) => !BASES_PRINCIPAIS.includes(b))].map((base) => {
+                const i = indexacoes.find((x) => x.base === base);
+                return (
+                  <tr key={base}>
+                    <td>{base}</td>
+                    <td>{!i ? <span className="suave">não informado</span> : i.situacao === "interrompida" ? <span className="selo vermelho">interrompida</span> : <span className="selo verde">indexada</span>}</td>
+                    <td>{i && <><span className={`selo ${classeSelo(i.selo)}`}>{SELOS[i.selo]}</span>{i.fonte ? <small> · {i.fonte}</small> : null}</>}</td>
+                    <td>{i ? dataBr(i.conferido_em) : ""}</td>
+                    <td>
+                      {i ? (
+                        <BotaoAcao url={`/api/indexacoes/${i.id}`} metodo="DELETE" rotulo="✕" confirmar="Excluir esta indexação?" />
+                      ) : (
+                        <Abrir rotulo="Inserir" titulo={`Indexação em ${base}`} classe="pequeno"><FormIndexacao veiculoId={id} baseInicial={base} /></Abrir>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
       <section className="cartao">
         <h2 style={{ marginTop: 0 }}>Publicações neste veículo ({pubs.length})</h2>
         <ul className="lista-itens">

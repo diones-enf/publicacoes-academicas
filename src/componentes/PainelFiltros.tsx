@@ -174,6 +174,7 @@ export function PainelFiltros({
             {sel("situacao_custo", "Pagamento", [{ v: "pago", r: "Pago" }, { v: "pendente", r: "Pendente" }])}
             {sel("qualidade", "Qualidade dos dados", [
               { v: "sem_doi", r: "Sem DOI" },
+              { v: "sem_revista", r: "Artigo sem revista" },
               { v: "sem_qualis", r: "Artigo sem Qualis" },
               { v: "nao_confirmada", r: "Métrica não confirmada" },
               { v: "possivel_duplicata", r: "Possível duplicata" },

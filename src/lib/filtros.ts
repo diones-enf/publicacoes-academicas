@@ -189,6 +189,7 @@ export function listarPublicacoes(donoId: number, f: Filtros, areaQualisRef: str
   if (f.situacao_custo === "pendente") add("EXISTS (SELECT 1 FROM lancamento_custo l WHERE l.publicacao_id = p.id AND l.data_pagamento IS NULL AND l.valor > 0)");
   if (f.situacao_custo === "pago") add("EXISTS (SELECT 1 FROM lancamento_custo l WHERE l.publicacao_id = p.id AND l.data_pagamento IS NOT NULL)");
   if (f.qualidade === "sem_doi") add("p.doi IS NULL");
+  if (f.qualidade === "sem_revista") add("p.veiculo_id IS NULL AND t.chave IN ('artigo','jornal')");
 
   const linhas = todos<Omit<LinhaLista, "secao" | "metricas" | "dias_parado">>(
     `SELECT p.id, p.titulo, p.tipo_id, t.nome AS tipo, t.chave AS tipo_chave, s.nome AS subtipo, p.status, p.ano,

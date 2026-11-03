@@ -16,6 +16,11 @@ export default async function Painel() {
   const vazio = !um("SELECT 1 FROM publicacao WHERE dono_id = ? LIMIT 1", donoId);
   const exemplo = temDadosExemplo(donoId);
   const duplicatas = possiveisDuplicatas(donoId).length;
+  const semRevista =
+    um<{ n: number }>(
+      "SELECT COUNT(*) n FROM publicacao p JOIN tipo_publicacao t ON t.id = p.tipo_id WHERE p.dono_id = ? AND p.veiculo_id IS NULL AND t.chave IN ('artigo','jornal')",
+      donoId,
+    )?.n ?? 0;
   const cartoes = [
     { rotulo: "Total publicado", valor: String(d.publicados), ajuda: `${d.publicados_ano} neste ano`, link: "/publicacoes?secao=publicados" },
     { rotulo: "Aceitos (aguardando publicação)", valor: String(d.aceitos), link: "/submissoes" },
@@ -39,6 +44,12 @@ export default async function Painel() {
         <div className="aviso atencao">
           Há dados de exemplo no sistema (marcados com [EXEMPLO]).{" "}
           <BotaoAcao url="/api/exemplo" metodo="DELETE" rotulo="Apagar dados de exemplo" confirmar="Apagar todas as publicações de exemplo?" />
+        </div>
+      )}
+      {semRevista > 0 && (
+        <div className="aviso atencao">
+          {semRevista} artigo(s) estão sem revista ligada e por isso não recebem Qualis, JCR nem Scopus.{" "}
+          <a href="/publicacoes?secao=&qualidade=sem_revista">Ver e corrigir</a>
         </div>
       )}
       {duplicatas > 0 && (
