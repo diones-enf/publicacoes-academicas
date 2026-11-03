@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-export function FormLista({ tipo }: { tipo: "qualis" | "jcr" }) {
+export function FormLista({ tipo }: { tipo: "qualis" | "jcr" | "scimago" }) {
   const [msg, setMsg] = useState<{ t: string; m: string } | null>(null);
   const [enviando, setEnviando] = useState(false);
   async function enviar(e: React.FormEvent<HTMLFormElement>) {
@@ -47,7 +47,7 @@ export function FormLista({ tipo }: { tipo: "qualis" | "jcr" }) {
         )}
       </div>
       {msg && <div className={`aviso ${msg.t}`} role="status">{msg.m}</div>}
-      <button type="submit" disabled={enviando}>{enviando ? "Importando..." : `Importar ${tipo === "qualis" ? "Qualis" : "JCR"}`}</button>
+      <button type="submit" disabled={enviando}>{enviando ? "Importando..." : `Importar ${tipo === "qualis" ? "Qualis" : tipo === "jcr" ? "JCR" : "SCImago (Scopus)"}`}</button>
     </form>
   );
 }

@@ -5,7 +5,7 @@
 import { todos, um } from "./db";
 import { salvarIndexacao, salvarMetrica, veiculoDoDono } from "./veiculos";
 import { normalizarIssn } from "./texto";
-import { carregarScimago, ultimoErroScimago } from "./conectores/scimago";
+import { carregarScimago, ultimoErroScimago, type LinhaScimago } from "./conectores/scimago";
 import { estaNoDoaj, estaNoMedline, estaNoScielo } from "./conectores/indexadores";
 import { revistaOpenAlex } from "./conectores/openalexFonte";
 import { executar, transacao } from "./db";
@@ -90,17 +90,11 @@ export async function buscarMetricasAutomaticas(donoId: number, veiculoId: numbe
   // Scopus via SCImago
   try {
     const mapa = await carregarScimago();
-    if (!mapa) avisos.push(`Scopus/SJR indisponível: ${ultimoErroScimago || "não foi possível baixar a lista do SCImago"}.`);
-    else {
-      const s = issns.map((i) => mapa.get(i)).find(Boolean);
-      if (s) {
-        const base = { periodo: s.ano, selo: "confirmado_oficial", fonte: "SCImago (base Scopus)" };
-        if (s.sjr) salvarMetrica(donoId, veiculoId, { ...base, indicador: "SJR", valor: s.sjr });
-        if (s.quartil) salvarMetrica(donoId, veiculoId, { ...base, indicador: "QUARTIL_SCOPUS", valor: s.quartil });
-        salvarIndexacao(donoId, veiculoId, { base: "Scopus", selo: "confirmado_oficial", fonte: "SCImago" });
-        encontrados.push(`Scopus (SJR ${s.ano})`);
-      }
-    }
+    if (!mapa)
+      avisos.push(
+        `Scopus/SJR indisponível: ${ultimoErroScimago || "não foi possível baixar a lista do SCImago"}. Envie o arquivo do SCImago em Importar Qualis e JCR.`,
+      );
+    else if (aplicarScimagoAoVeiculo(donoId, veiculoId, issns, mapa)) encontrados.push("Scopus (SJR)");
   } catch (e) {
     avisos.push(`SCImago: ${(e as Error).message}`);
   }
@@ -177,4 +171,23 @@ function prepararTitulosQualis() {
   transacao(() => {
     for (const r of faltando) executar("UPDATE ref_qualis SET titulo_normalizado = ? WHERE rowid = ?", chaveRevista(r.titulo), r.rowid);
   });
+}
+
+/** Grava SJR, quartil e indexação Scopus a partir da lista do SCImago. */
+export function aplicarScimagoAoVeiculo(donoId: number, veiculoId: number, issns: string[], mapa: Map<string, LinhaScimago>): boolean {
+  const s = issns.map((i) => mapa.get(i)).find(Boolean);
+  if (!s) return false;
+  const base = { periodo: s.ano, selo: "confirmado_oficial", fonte: "SCImago (base Scopus)" };
+  if (s.sjr) salvarMetrica(donoId, veiculoId, { ...base, indicador: "SJR", valor: s.sjr });
+  if (s.quartil) salvarMetrica(donoId, veiculoId, { ...base, indicador: "QUARTIL_SCOPUS", valor: s.quartil });
+  salvarIndexacao(donoId, veiculoId, { base: "Scopus", selo: "confirmado_oficial", fonte: "SCImago" });
+  return true;
+}
+
+/** Depois de enviar a lista do SCImago: aplica a todas as revistas, sem internet. */
+export function aplicarScimagoEmTodas(donoId: number, mapa: Map<string, LinhaScimago>): number {
+  let n = 0;
+  for (const v of todos<{ id: number; issn: string | null; eissn: string | null }>("SELECT id, issn, eissn FROM veiculo WHERE dono_id = ?", donoId))
+    if (aplicarScimagoAoVeiculo(donoId, v.id, issnsDe(v), mapa)) n++;
+  return n;
 }

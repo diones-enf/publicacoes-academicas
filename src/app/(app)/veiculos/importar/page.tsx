@@ -9,7 +9,7 @@ export default async function Importar() {
   return (
     <>
       <p><a href="/veiculos">← Revistas e veículos</a></p>
-      <h1>Importar Qualis e JCR</h1>
+      <h1>Importar Qualis, Scopus e JCR</h1>
       <p className="suave">
         A CAPES e a Clarivate não oferecem consulta automática gratuita. Você baixa a lista oficial uma vez e envia aqui: todas as
         suas revistas (as de hoje e as que cadastrar depois) recebem o Qualis e o JCR sozinhas, pelo ISSN, com o selo
@@ -41,6 +41,17 @@ export default async function Importar() {
         </ol>
         <p className="ajuda suave">Também serve a planilha de &quot;Qualis periódicos&quot; do portal de dados abertos da CAPES (dadosabertos.capes.gov.br), em CSV ou XLSX.</p>
         <FormLista tipo="qualis" />
+      </section>
+
+      <section className="cartao">
+        <h2 style={{ marginTop: 0 }}>Scopus: SJR e quartil (SCImago)</h2>
+        <ol>
+          <li>Abra <a href="https://www.scimagojr.com/journalrank.php" target="_blank" rel="noreferrer">scimagojr.com → Journal Rankings</a> (público, sem login).</li>
+          <li>Clique em <strong>Download data</strong>, no topo da tabela. Vem um arquivo como <em>scimagojr_2025.csv</em>.</li>
+          <li>Envie o arquivo abaixo. Faça isso uma vez por ano, quando sair a lista nova.</li>
+        </ol>
+        <p className="ajuda suave">Revista que não aparece nessa lista não está indexada no Scopus.</p>
+        <FormLista tipo="scimago" />
       </section>
 
       <section className="cartao">

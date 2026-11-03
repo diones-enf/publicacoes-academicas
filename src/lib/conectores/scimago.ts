@@ -93,3 +93,17 @@ export async function carregarScimago(): Promise<Map<string, LinhaScimago> | nul
 export function limparCacheScimago() {
   cache = null;
 }
+
+/** Guarda a lista do SCImago enviada pelo usuário (CSV baixado em scimagojr.com). Devolve ano e nº de revistas. */
+export function guardarScimagoEnviado(texto: string, nomeArquivo: string): { ano: string; revistas: number } {
+  const t = texto.replace(/^\uFEFF/, "");
+  if (!t.slice(0, 2000).toLowerCase().includes("sourceid"))
+    throw new Error("Este arquivo não parece ser a lista do SCImago (falta a coluna Sourceid).");
+  const ano =
+    nomeArquivo.match(/(20\d{2})/)?.[1] ?? t.slice(0, 2000).match(/Total Docs\. \((20\d{2})\)/)?.[1] ?? String(new Date().getFullYear() - 1);
+  const mapa = mapaScimago(t, ano);
+  if (mapa.size < 100) throw new Error("A lista do SCImago veio vazia ou incompleta.");
+  fs.writeFileSync(arquivo(ano), t);
+  cache = { ano, mapa };
+  return { ano, revistas: new Set([...mapa.values()]).size };
+}
