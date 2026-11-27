@@ -56,6 +56,11 @@ export function aplicarListasOficiais(donoId: number, veiculoId: number): string
     if (porNome.length) achados.push(`Qualis pelo nome (${porNome.length} área(s), confira o ISSN)`);
   }
 
+  // Listas oficiais de indexação importadas (CINAHL, Embase, PsycINFO, ERIH PLUS...)
+  const bases = todos<{ base: string }>(`SELECT DISTINCT base FROM ref_indexacao WHERE issn IN (${marc})`, ...issns);
+  for (const b of bases) salvarIndexacao(donoId, veiculoId, { base: b.base, selo: "confirmado_oficial", fonte: `Lista oficial ${b.base}` });
+  if (bases.length) achados.push(bases.map((b) => b.base).join(", "));
+
   const jcr = um<{ ano: string; jif: string | null; jif5: string | null; jci: string | null; quartil: string | null; categoria: string | null; edicao: string | null }>(
     `SELECT * FROM ref_jcr WHERE issn IN (${marc}) ORDER BY ano DESC LIMIT 1`,
     ...issns,

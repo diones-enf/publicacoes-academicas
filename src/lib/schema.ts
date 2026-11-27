@@ -437,4 +437,13 @@ export const MIGRACOES: string[] = [
     titulo TEXT
   );
   `,
+  /* 8 — Listas oficiais de indexação (CINAHL, Embase, PsycINFO, ERIH PLUS...) */ `
+  CREATE TABLE ref_indexacao (
+    base TEXT NOT NULL,
+    issn TEXT NOT NULL,
+    titulo TEXT,
+    PRIMARY KEY (base, issn)
+  );
+  CREATE INDEX ix_ref_indexacao_issn ON ref_indexacao(issn);
+  `,
 ];

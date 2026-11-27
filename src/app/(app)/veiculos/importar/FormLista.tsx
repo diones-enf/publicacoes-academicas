@@ -98,3 +98,50 @@ export function FormColar() {
     </form>
   );
 }
+
+export function FormListaIndexacao({ bases }: { bases: string[] }) {
+  const [base, setBase] = useState(bases[0]);
+  const [msg, setMsg] = useState<{ t: string; m: string } | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  async function enviar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setMsg(null);
+    setEnviando(true);
+    const dados = new FormData(e.currentTarget);
+    dados.set("tipo", "indexacao");
+    try {
+      const r = await fetch("/api/listas", { method: "POST", body: dados });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.erro ?? "Erro ao importar.");
+      setMsg({ t: "ok", m: j.mensagem });
+    } catch (er) {
+      setMsg({ t: "erro", m: (er as Error).message });
+    } finally {
+      setEnviando(false);
+    }
+  }
+  return (
+    <form onSubmit={enviar}>
+      <div className="grade grade-3">
+        <div className="campo">
+          <label htmlFor="idx-base">Base</label>
+          <select id="idx-base" name="base" value={base} onChange={(e) => setBase(e.target.value)}>
+            {bases.map((b) => <option key={b}>{b}</option>)}
+          </select>
+        </div>
+        {base === "Outra" && (
+          <div className="campo">
+            <label htmlFor="idx-outra">Nome da base</label>
+            <input id="idx-outra" name="outra" required placeholder="ex.: Redalyc" />
+          </div>
+        )}
+        <div className="campo">
+          <label htmlFor="arq-indexacao">Lista de revistas da base (.xlsx ou .csv)</label>
+          <input id="arq-indexacao" name="arquivo" type="file" accept=".xlsx,.csv,.xls" required />
+        </div>
+      </div>
+      {msg && <div className={`aviso ${msg.t}`} role="status">{msg.m}</div>}
+      <button type="submit" disabled={enviando}>{enviando ? "Importando..." : "Importar lista"}</button>
+    </form>
+  );
+}

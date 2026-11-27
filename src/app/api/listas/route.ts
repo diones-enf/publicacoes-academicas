@@ -1,5 +1,5 @@
 import { rota } from "@/lib/api";
-import { importarJcr, importarQualis, importarQualisColado, lerPlanilha } from "@/lib/planilhas";
+import { importarJcr, importarListaIndexacao, importarQualis, importarQualisColado, lerPlanilha } from "@/lib/planilhas";
 import { aplicarListasEmTodas, aplicarScimagoEmTodas } from "@/lib/metricasAuto";
 import { carregarScimago, guardarScimagoEnviado } from "@/lib/conectores/scimago";
 
@@ -14,6 +14,12 @@ export const POST = rota(async (req, { ctx }) => {
     return { mensagem: `${n.toLocaleString("pt-BR")} classificações Qualis importadas. ${revistas} revista(s) suas foram atualizadas.` };
   }
   if (!(arquivo instanceof File) || !arquivo.size) return Response.json({ erro: "Escolha o arquivo." }, { status: 400 });
+  if (tipo === "indexacao") {
+    const base = String(form.get("base") ?? "").trim() === "Outra" ? String(form.get("outra") ?? "") : String(form.get("base") ?? "");
+    const n = importarListaIndexacao(await lerPlanilha(Buffer.from(await arquivo.arrayBuffer()), arquivo.name), base, arquivo.name);
+    const revistas = aplicarListasEmTodas(ctx.donoId);
+    return { mensagem: `Lista de ${base.trim()} importada (${n.toLocaleString("pt-BR")} ISSNs). As revistas suas que estão nela foram marcadas como indexadas (${revistas} revista(s) atualizadas com alguma lista oficial).` };
+  }
   if (tipo === "scimago") {
     const r = guardarScimagoEnviado(await arquivo.text(), arquivo.name);
     const mapa = await carregarScimago();

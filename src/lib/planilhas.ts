@@ -213,3 +213,45 @@ export function importarQualisColado(texto: string, periodo: string, areaPadrao:
   if (linhas.slice(1).some((l) => !l[2])) throw new Error("Informe a área de avaliação (ex.: Enfermagem).");
   return importarQualis(linhas, p, "colado do Sucupira");
 }
+
+/**
+ * Lista oficial de revistas de uma base de indexação (CINAHL, Embase, PsycINFO,
+ * ERIH PLUS...). Basta ter colunas de ISSN: todas as colunas cujo título contém
+ * "ISSN" são lidas (impresso e eletrônico). A lista nova substitui a anterior da mesma base.
+ */
+export function importarListaIndexacao(linhas: string[][], base: string, nomeArquivo: string): number {
+  const nomeBase = base.trim();
+  if (!nomeBase) throw new Error("Informe o nome da base.");
+  let inicio = -1;
+  let colunasIssn: number[] = [];
+  let colTitulo = -1;
+  for (let i = 0; i < Math.min(linhas.length, 40); i++) {
+    const cab = linhas[i].map((c) => normalizar(c));
+    const issn = cab.map((c, k) => (c.includes("issn") ? k : -1)).filter((k) => k >= 0);
+    if (issn.length) {
+      inicio = i + 1;
+      colunasIssn = issn;
+      colTitulo = cab.findIndex((c) => c === "title" || c === "titulo" || c.includes("journal title") || c.includes("publication title") || c === "source title" || c.startsWith("titulo"));
+      break;
+    }
+  }
+  if (inicio < 0) throw new Error("Não encontrei nenhuma coluna de ISSN nesta planilha. Confira se é a lista de revistas da base.");
+  let n = 0;
+  transacao(() => {
+    executar("DELETE FROM ref_indexacao WHERE base = ?", nomeBase);
+    for (const l of linhas.slice(inicio)) {
+      for (const k of colunasIssn) {
+        // algumas listas trazem dois ISSN na mesma célula
+        for (const parte of String(l[k] ?? "").split(/[;,/|\s]+/)) {
+          const issn = normalizarIssn(parte);
+          if (!issn) continue;
+          executar("INSERT OR IGNORE INTO ref_indexacao (base, issn, titulo) VALUES (?, ?, ?)", nomeBase, issn, colTitulo >= 0 ? l[colTitulo] || null : null);
+          n++;
+        }
+      }
+    }
+    inserir("importacao_lista", { tipo: `Indexação ${nomeBase}`, arquivo: nomeArquivo, periodo: null, linhas: n });
+  });
+  if (!n) throw new Error("Nenhum ISSN válido encontrado na planilha.");
+  return n;
+}

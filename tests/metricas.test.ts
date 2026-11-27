@@ -191,3 +191,28 @@ describe("Qualis pelo nome ignora (ONLINE)", () => {
     expect(p.metricas?.qualis_area).toBe("Interdisciplinar");
   });
 });
+
+describe("lista oficial de indexação (CINAHL e outras)", () => {
+  it("lê colunas de ISSN impresso e online, mesmo com linhas antes do cabeçalho, e marca as revistas", async () => {
+    const { importarListaIndexacao } = await import("@/lib/planilhas");
+    const ctx = await novoAmbiente();
+    const id = await criarPublicacao(ctx, artigo(ctx)); // revista com ISSN 0102-6933 / 1983-1447
+    await criarPublicacao(ctx, artigo(ctx, { titulo: "Outro artigo", veiculo: { nome: "Fora da lista", issn: "1234-5679" } }));
+    const linhas = [
+      ["CINAHL Complete - Magazines and Journals"],
+      ["Gerado em 01/11/2026"],
+      ["Title", "Print ISSN", "Online ISSN", "Indexing and Abstracting Start"],
+      ["Revista Gaucha de Enfermagem", "", "1983-1447", "01/01/2005"],
+      ["Another Journal", "11112222", "", "2010"],
+      ["Dois ISSN na mesma célula", "0000-0019; 1234-5679X", "", ""],
+    ];
+    expect(importarListaIndexacao(linhas, "CINAHL", "cinahl.xlsx")).toBeGreaterThanOrEqual(2);
+    aplicarListasEmTodas(ctx.donoId);
+    const v = Number(obterPublicacao(ctx.donoId, id)!.veiculo_id);
+    expect(indexacoesDoVeiculo(v).map((i) => [i.base, i.selo])).toEqual([["CINAHL", "confirmado_oficial"]]);
+    expect(listarPublicacoes(ctx.donoId, { indexacao: "CINAHL" }, null).map((p) => p.titulo)).toEqual(["Cuidados de enfermagem na sepse: revisão integrativa"]);
+    // lista nova substitui a anterior
+    expect(importarListaIndexacao([["ISSN"], ["2965-6672"]], "CINAHL", "nova.csv")).toBe(1);
+    expect(() => importarListaIndexacao([["Nome"], ["x"]], "CINAHL", "x.csv")).toThrow("ISSN");
+  });
+});

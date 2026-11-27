@@ -1,7 +1,8 @@
 import { exigirUsuario } from "@/lib/sessao";
 import { listasImportadas } from "@/lib/planilhas";
 import { dataBr } from "@/lib/texto";
-import { FormColar, FormLista } from "./FormLista";
+import { FormColar, FormLista, FormListaIndexacao } from "./FormLista";
+import { BASES_COM_LISTA } from "@/lib/constantes";
 
 export default async function Importar() {
   await exigirUsuario("autor");
@@ -9,7 +10,7 @@ export default async function Importar() {
   return (
     <>
       <p><a href="/veiculos">← Revistas e veículos</a></p>
-      <h1>Importar Qualis, Scopus e JCR</h1>
+      <h1>Importar Qualis, Scopus, JCR e indexações</h1>
       <p className="suave">
         A CAPES e a Clarivate não oferecem consulta automática gratuita. Você baixa a lista oficial uma vez e envia aqui: todas as
         suas revistas (as de hoje e as que cadastrar depois) recebem o Qualis e o JCR sozinhas, pelo ISSN, com o selo
@@ -52,6 +53,22 @@ export default async function Importar() {
         </ol>
         <p className="ajuda suave">Revista que não aparece nessa lista não está indexada no Scopus.</p>
         <FormLista tipo="scimago" />
+      </section>
+
+      <section className="cartao">
+        <h2 style={{ marginTop: 0 }}>Outras indexações: CINAHL, Embase, PsycINFO, ERIH PLUS</h2>
+        <p>
+          Essas bases publicam a lista oficial das revistas que indexam, em planilha. Envie a lista uma vez (e de novo quando sair a
+          atualização): todas as suas revistas com ISSN na lista ficam marcadas como indexadas, com o selo &quot;Confirmado na fonte oficial&quot;.
+        </p>
+        <ul>
+          <li><strong>CINAHL</strong> (EBSCO): no site da EBSCO, procure &quot;CINAHL title list&quot; e baixe a planilha (Excel) da base CINAHL.</li>
+          <li><strong>Embase</strong> (Elsevier): procure &quot;Embase journal list&quot; no site da Elsevier.</li>
+          <li><strong>PsycINFO</strong> (APA): procure &quot;PsycInfo journal coverage list&quot; no site da APA.</li>
+          <li><strong>ERIH PLUS</strong>: no site do ERIH PLUS, use a opção de baixar a lista de periódicos aprovados.</li>
+        </ul>
+        <p className="ajuda suave">Serve qualquer planilha que tenha colunas com &quot;ISSN&quot; no título. Se a planilha der erro, mande para o Claude converter.</p>
+        <FormListaIndexacao bases={BASES_COM_LISTA} />
       </section>
 
       <section className="cartao">

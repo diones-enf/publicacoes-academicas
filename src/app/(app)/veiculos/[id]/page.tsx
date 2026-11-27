@@ -11,7 +11,10 @@ import { BuscarMetricas } from "../BuscarMetricas";
 import { FormIndexacao, FormMetrica } from "./FormMetrica";
 
 const PRINCIPAIS = ["QUALIS", "JIF", "JIF5", "JCI", "QUARTIL_JCR", "COLECAO_WOS", "SJR", "QUARTIL_SCOPUS", "CITESCORE", "IMPACTO_2A_OPENALEX", "H_OPENALEX", "H5", "APC_USD"];
-const BASES_PRINCIPAIS = ["Scopus", "WoS SCIE", "WoS SSCI", "WoS ESCI", "SciELO", "PubMed/MEDLINE", "LILACS", "BDENF", "DOAJ", "Latindex"];
+const BASES_PRINCIPAIS = [
+  "Scopus", "WoS SCIE", "WoS SSCI", "WoS ESCI", "SciELO", "PubMed/MEDLINE", "LILACS", "BDENF", "CINAHL", "CUIDEN",
+  "DOAJ", "Redalyc", "Latindex", "ERIH PLUS", "Miguilim",
+];
 const nomeIndicador = (c: string) => INDICADORES.find((i) => i.chave === c)?.nome ?? c;
 const classeSelo = (s: string) => (s === "confirmado_oficial" ? "verde" : s === "nao_localizado" ? "vermelho" : "amarelo");
 
