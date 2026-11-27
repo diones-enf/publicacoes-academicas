@@ -476,4 +476,19 @@ export const MIGRACOES: string[] = [
     PRIMARY KEY (publicacao_id, mes)
   );
   `,
+  /* 12 — Google Acadêmico: link do perfil e foto mensal dos números do perfil */ `
+  ALTER TABLE usuario ADD COLUMN google_academico TEXT;      -- id do perfil (user=...)
+  CREATE TABLE perfil_google_mensal (
+    dono_id INTEGER NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
+    mes TEXT NOT NULL,
+    citacoes INTEGER, citacoes_desde INTEGER,
+    h INTEGER, h_desde INTEGER,
+    i10 INTEGER, i10_desde INTEGER,
+    ano_desde INTEGER,
+    por_ano TEXT NOT NULL DEFAULT '[]',    -- [{ano,total}]
+    artigos TEXT NOT NULL DEFAULT '[]',    -- [{titulo,autores,veiculo,ano,citacoes,publicacao_id}]
+    registrado_em TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (dono_id, mes)
+  );
+  `,
 ];

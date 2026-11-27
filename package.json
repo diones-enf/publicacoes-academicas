@@ -1,6 +1,6 @@
 {
   "name": "publicacoes-academicas",
-  "version": "23",
+  "version": "24",
   "private": true,
   "description": "Sistema local de controle de publicações acadêmicas",
   "engines": {

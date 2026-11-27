@@ -5,6 +5,7 @@ import { fazerBackup } from "./backup";
 import { enviarLembretesPorEmail, gerarLembretes } from "./lembretes";
 import { hojeIso } from "./texto";
 import { atualizarCitacoes } from "./citacoes";
+import { atualizarGoogle } from "./googleAcademico";
 
 let rodando = false;
 
@@ -26,7 +27,10 @@ export function executarRotinasDoDia(forcar = false) {
       gerarLembretes(id, hoje);
       void enviarLembretesPorEmail(id);
       // Foto mensal das citações (em segundo plano; sem internet, tenta no mês seguinte ou pelo botão)
-      if (novoMes) void atualizarCitacoes(id).catch(() => undefined);
+      if (novoMes) {
+        void atualizarCitacoes(id).catch(() => undefined);
+        void atualizarGoogle(id).catch(() => undefined);
+      }
     }
   } finally {
     rodando = false;
