@@ -446,4 +446,8 @@ export const MIGRACOES: string[] = [
   );
   CREATE INDEX ix_ref_indexacao_issn ON ref_indexacao(issn);
   `,
+  /* 9 — listas de indexação: período de cobertura (indexação interrompida) */ `
+  ALTER TABLE ref_indexacao ADD COLUMN interrompida INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE ref_indexacao ADD COLUMN ate TEXT;
+  `,
 ];

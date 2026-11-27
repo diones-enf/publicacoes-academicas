@@ -57,8 +57,17 @@ export function aplicarListasOficiais(donoId: number, veiculoId: number): string
   }
 
   // Listas oficiais de indexação importadas (CINAHL, Embase, PsycINFO, ERIH PLUS...)
-  const bases = todos<{ base: string }>(`SELECT DISTINCT base FROM ref_indexacao WHERE issn IN (${marc})`, ...issns);
-  for (const b of bases) salvarIndexacao(donoId, veiculoId, { base: b.base, selo: "confirmado_oficial", fonte: `Lista oficial ${b.base}` });
+  const bases = todos<{ base: string; interrompida: number; ate: string | null }>(
+    `SELECT base, MIN(interrompida) AS interrompida, MAX(ate) AS ate FROM ref_indexacao WHERE issn IN (${marc}) GROUP BY base`,
+    ...issns,
+  );
+  for (const b of bases)
+    salvarIndexacao(donoId, veiculoId, {
+      base: b.base,
+      situacao: b.interrompida ? "interrompida" : "ativa",
+      selo: "confirmado_oficial",
+      fonte: b.interrompida && b.ate ? `Lista oficial ${b.base} (indexada até ${b.ate.split("-").reverse().join("/")})` : `Lista oficial ${b.base}`,
+    });
   if (bases.length) achados.push(bases.map((b) => b.base).join(", "));
 
   const jcr = um<{ ano: string; jif: string | null; jif5: string | null; jci: string | null; quartil: string | null; categoria: string | null; edicao: string | null }>(

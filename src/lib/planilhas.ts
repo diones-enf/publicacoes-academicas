@@ -225,27 +225,46 @@ export function importarListaIndexacao(linhas: string[][], base: string, nomeArq
   let inicio = -1;
   let colunasIssn: number[] = [];
   let colTitulo = -1;
+  let colFim = -1;
   for (let i = 0; i < Math.min(linhas.length, 40); i++) {
     const cab = linhas[i].map((c) => normalizar(c));
     const issn = cab.map((c, k) => (c.includes("issn") ? k : -1)).filter((k) => k >= 0);
     if (issn.length) {
       inicio = i + 1;
       colunasIssn = issn;
-      colTitulo = cab.findIndex((c) => c === "title" || c === "titulo" || c.includes("journal title") || c.includes("publication title") || c === "source title" || c.startsWith("titulo"));
+      colTitulo = cab.findIndex(
+        (c) => c === "title" || c === "titulo" || c.includes("journal title") || c.includes("publication title") || c.includes("publication name") || c === "source title" || c.startsWith("titulo"),
+      );
+      // Fim da cobertura (ex.: "Indexing and Abstracting Stop" do CINAHL): revista que saiu da base
+      colFim = cab.findIndex((c) => (c.includes("index") && (c.includes("stop") || c.includes("end"))) || c === "coverage end" || c.includes("fim da indexacao"));
       break;
     }
   }
   if (inicio < 0) throw new Error("Não encontrei nenhuma coluna de ISSN nesta planilha. Confira se é a lista de revistas da base.");
   let n = 0;
+  const hoje = new Date().toISOString().slice(0, 10);
   transacao(() => {
     executar("DELETE FROM ref_indexacao WHERE base = ?", nomeBase);
     for (const l of linhas.slice(inicio)) {
+      const ate = colFim >= 0 ? dataDaPlanilha(l[colFim]) : null;
+      const interrompida = ate !== null && ate < hoje ? 1 : 0;
       for (const k of colunasIssn) {
         // algumas listas trazem dois ISSN na mesma célula
         for (const parte of String(l[k] ?? "").split(/[;,/|\s]+/)) {
           const issn = normalizarIssn(parte);
           if (!issn) continue;
-          executar("INSERT OR IGNORE INTO ref_indexacao (base, issn, titulo) VALUES (?, ?, ?)", nomeBase, issn, colTitulo >= 0 ? l[colTitulo] || null : null);
+          // se a mesma revista aparece ativa e interrompida, vale a ativa
+          executar(
+            `INSERT INTO ref_indexacao (base, issn, titulo, interrompida, ate) VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT(base, issn) DO UPDATE SET
+               ate = CASE WHEN excluded.interrompida < ref_indexacao.interrompida THEN excluded.ate ELSE ref_indexacao.ate END,
+               interrompida = MIN(ref_indexacao.interrompida, excluded.interrompida)`,
+            nomeBase,
+            issn,
+            colTitulo >= 0 ? l[colTitulo] || null : null,
+            interrompida,
+            interrompida ? ate : null,
+          );
           n++;
         }
       }
@@ -254,4 +273,15 @@ export function importarListaIndexacao(linhas: string[][], base: string, nomeArq
   });
   if (!n) throw new Error("Nenhum ISSN válido encontrado na planilha.");
   return n;
+}
+
+/** Data numa célula de planilha ("2018", "2018-04-01", "Sun Apr 01 2018 00:00:00 GMT…", "01/04/2018") em AAAA-MM-DD. */
+export function dataDaPlanilha(v: string | undefined | null): string | null {
+  const t = String(v ?? "").trim();
+  if (!t) return null;
+  if (/^\d{4}$/.test(t)) return `${t}-12-31`;
+  const br = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  const ms = Date.parse(t);
+  return Number.isNaN(ms) ? null : new Date(ms).toISOString().slice(0, 10);
 }

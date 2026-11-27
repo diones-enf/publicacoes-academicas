@@ -201,16 +201,22 @@ describe("lista oficial de indexação (CINAHL e outras)", () => {
     const linhas = [
       ["CINAHL Complete - Magazines and Journals"],
       ["Gerado em 01/11/2026"],
-      ["Title", "Print ISSN", "Online ISSN", "Indexing and Abstracting Start"],
-      ["Revista Gaucha de Enfermagem", "", "1983-1447", "01/01/2005"],
-      ["Another Journal", "11112222", "", "2010"],
-      ["Dois ISSN na mesma célula", "0000-0019; 1234-5679X", "", ""],
+      ["Title", "Print ISSN", "Online ISSN", "Indexing and Abstracting Start", "Indexing and Abstracting Stop"],
+      ["Revista Gaucha de Enfermagem", "", "1983-1447", "01/01/2005", ""],
+      ["Another Journal", "11112222", "", "2010", ""],
+      ["Dois ISSN na mesma célula", "0000-0019; 1234-5679X", "", "", ""],
+      ["Revista que saiu", "1234-5679", "", "Fri Jan 01 2016 00:00:00 GMT+0000 (Coordinated Universal Time)", "Sun Apr 01 2018 00:00:00 GMT+0000 (Coordinated Universal Time)"],
     ];
     expect(importarListaIndexacao(linhas, "CINAHL", "cinahl.xlsx")).toBeGreaterThanOrEqual(2);
     aplicarListasEmTodas(ctx.donoId);
     const v = Number(obterPublicacao(ctx.donoId, id)!.veiculo_id);
     expect(indexacoesDoVeiculo(v).map((i) => [i.base, i.selo])).toEqual([["CINAHL", "confirmado_oficial"]]);
     expect(listarPublicacoes(ctx.donoId, { indexacao: "CINAHL" }, null).map((p) => p.titulo)).toEqual(["Cuidados de enfermagem na sepse: revisão integrativa"]);
+    // a revista que saiu do CINAHL em 2018 fica como interrompida, não como indexada
+    const fora = listarPublicacoes(ctx.donoId, { secao: "" }, null).find((p) => p.titulo === "Outro artigo")!;
+    const ix = indexacoesDoVeiculo(Number(fora.veiculo_id));
+    expect(ix.map((i) => [i.base, i.situacao])).toEqual([["CINAHL", "interrompida"]]);
+    expect(ix[0].fonte).toContain("até 01/04/2018");
     // lista nova substitui a anterior
     expect(importarListaIndexacao([["ISSN"], ["2965-6672"]], "CINAHL", "nova.csv")).toBe(1);
     expect(() => importarListaIndexacao([["Nome"], ["x"]], "CINAHL", "x.csv")).toThrow("ISSN");
