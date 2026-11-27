@@ -71,12 +71,13 @@ export default async function Importar() {
       </section>
 
       <section className="cartao">
-        <h2 style={{ marginTop: 0 }}>Outras indexações: CINAHL, Embase, PsycINFO, ERIH PLUS</h2>
+        <h2 style={{ marginTop: 0 }}>Outras indexações: LILACS, BDENF, IBECS, CINAHL, Embase, PsycINFO, ERIH PLUS</h2>
         <p>
           Essas bases publicam a lista oficial das revistas que indexam, em planilha. Envie a lista uma vez (e de novo quando sair a
           atualização): todas as suas revistas com ISSN na lista ficam marcadas como indexadas, com o selo &quot;Confirmado na fonte oficial&quot;.
         </p>
         <ul>
+          <li><strong>LILACS, BDENF e IBECS</strong> (BVS): o Portal de Revistas da BVS não tem botão de baixar; peça ao Claude as planilhas prontas (geradas a partir do portal).</li>
           <li><strong>CINAHL</strong> (EBSCO): no site da EBSCO, procure &quot;CINAHL title list&quot; e baixe a planilha (Excel) da base CINAHL.</li>
           <li><strong>Embase</strong> (Elsevier): procure &quot;Embase journal list&quot; no site da Elsevier.</li>
           <li><strong>PsycINFO</strong> (APA): procure &quot;PsycInfo journal coverage list&quot; no site da APA.</li>

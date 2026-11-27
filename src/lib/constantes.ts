@@ -154,7 +154,7 @@ export const BASES_INDEXACAO = [
 ];
 
 /** Bases cuja lista oficial de revistas pode ser importada (planilha com ISSN). */
-export const BASES_COM_LISTA = ["CINAHL", "Embase", "PsycINFO", "ERIH PLUS", "Outra"];
+export const BASES_COM_LISTA = ["LILACS", "BDENF", "IBECS", "CINAHL", "Embase", "PsycINFO", "ERIH PLUS", "Outra"];
 
 export const SELOS: Record<string, string> = {
   confirmado_oficial: "Confirmado na fonte oficial",
