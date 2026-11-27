@@ -450,4 +450,16 @@ export const MIGRACOES: string[] = [
   ALTER TABLE ref_indexacao ADD COLUMN interrompida INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE ref_indexacao ADD COLUMN ate TEXT;
   `,
+  /* 10 — Miguilim (IBICT): indexações declaradas, h5 e APC das revistas brasileiras */ `
+  ALTER TABLE ref_indexacao ADD COLUMN selo TEXT NOT NULL DEFAULT 'confirmado_oficial';
+  ALTER TABLE ref_indexacao ADD COLUMN fonte TEXT;
+  CREATE TABLE ref_miguilim (
+    issn TEXT PRIMARY KEY,
+    titulo TEXT,
+    h5 INTEGER,
+    apc_valor REAL,
+    apc_moeda TEXT,
+    taxas TEXT
+  );
+  `,
 ];

@@ -2,6 +2,7 @@ import { rota } from "@/lib/api";
 import { importarJcr, importarListaIndexacao, importarQualis, importarQualisColado, lerPlanilha } from "@/lib/planilhas";
 import { aplicarListasEmTodas, aplicarScimagoEmTodas } from "@/lib/metricasAuto";
 import { carregarScimago, guardarScimagoEnviado } from "@/lib/conectores/scimago";
+import { importarMiguilim } from "@/lib/miguilim";
 
 /** Recebe a planilha oficial do Qualis ou do JCR (formulário com arquivo). */
 export const POST = rota(async (req, { ctx }) => {
@@ -14,6 +15,11 @@ export const POST = rota(async (req, { ctx }) => {
     return { mensagem: `${n.toLocaleString("pt-BR")} classificações Qualis importadas. ${revistas} revista(s) suas foram atualizadas.` };
   }
   if (!(arquivo instanceof File) || !arquivo.size) return Response.json({ erro: "Escolha o arquivo." }, { status: 400 });
+  if (tipo === "miguilim") {
+    const r = importarMiguilim(await arquivo.text(), arquivo.name);
+    const n = aplicarListasEmTodas(ctx.donoId);
+    return { mensagem: `Miguilim importado: ${r.revistas.toLocaleString("pt-BR")} revistas brasileiras. Suas revistas foram atualizadas com as indexações, o h5 e a APC declarados (${n} revista(s) com alguma lista).` };
+  }
   if (tipo === "indexacao") {
     const base = String(form.get("base") ?? "").trim() === "Outra" ? String(form.get("outra") ?? "") : String(form.get("base") ?? "");
     const n = importarListaIndexacao(await lerPlanilha(Buffer.from(await arquivo.arrayBuffer()), arquivo.name), base, arquivo.name);

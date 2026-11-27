@@ -56,6 +56,21 @@ export default async function Importar() {
       </section>
 
       <section className="cartao">
+        <h2 style={{ marginTop: 0 }}>Revistas brasileiras: Miguilim (IBICT)</h2>
+        <p>
+          O Miguilim reúne as revistas científicas brasileiras e as bases em que cada uma declara estar indexada (LILACS, BDENF, BVS, CUIDEN,
+          CINAHL, Latindex, Redalyc, DOAJ, Diadorim, Sumários, ERIH PLUS e outras), além do índice h5 e da taxa de publicação (APC).
+          Entram com o selo &quot;Informado pela revista&quot; e nunca substituem um dado já confirmado na fonte oficial.
+        </p>
+        <ol>
+          <li>Abra <a href="https://miguilim.ibict.br" target="_blank" rel="noreferrer">miguilim.ibict.br</a> e faça a busca de revistas, sem filtros.</li>
+          <li>Use a opção de <strong>exportar</strong> os resultados em <strong>CSV</strong>. Vem um arquivo como <em>search-results.csv</em>.</li>
+          <li>Envie o arquivo abaixo. Repita de tempos em tempos, para atualizar.</li>
+        </ol>
+        <FormLista tipo="miguilim" />
+      </section>
+
+      <section className="cartao">
         <h2 style={{ marginTop: 0 }}>Outras indexações: CINAHL, Embase, PsycINFO, ERIH PLUS</h2>
         <p>
           Essas bases publicam a lista oficial das revistas que indexam, em planilha. Envie a lista uma vez (e de novo quando sair a

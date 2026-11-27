@@ -3,7 +3,7 @@
 // - Scopus (SJR e quartil): pela lista pública do SCImago;
 // - DOAJ, PubMed/MEDLINE e SciELO: pelas consultas públicas de cada base.
 import { todos, um } from "./db";
-import { salvarIndexacao, salvarMetrica, veiculoDoDono } from "./veiculos";
+import { indexacoesDoVeiculo, salvarIndexacao, salvarMetrica, veiculoDoDono } from "./veiculos";
 import { normalizarIssn } from "./texto";
 import { carregarScimago, ultimoErroScimago, type LinhaScimago } from "./conectores/scimago";
 import { estaNoDoaj, estaNoMedline, estaNoScielo } from "./conectores/indexadores";
@@ -57,17 +57,40 @@ export function aplicarListasOficiais(donoId: number, veiculoId: number): string
   }
 
   // Listas oficiais de indexação importadas (CINAHL, Embase, PsycINFO, ERIH PLUS...)
-  const bases = todos<{ base: string; interrompida: number; ate: string | null }>(
-    `SELECT base, MIN(interrompida) AS interrompida, MAX(ate) AS ate FROM ref_indexacao WHERE issn IN (${marc}) GROUP BY base`,
+  const bases = todos<{ base: string; interrompida: number; ate: string | null; selo: string; fonte: string | null }>(
+    `SELECT base, MIN(interrompida) AS interrompida, MAX(ate) AS ate,
+            CASE WHEN SUM(selo = 'confirmado_oficial') > 0 THEN 'confirmado_oficial' ELSE 'informado_revista' END AS selo,
+            MAX(fonte) AS fonte
+       FROM ref_indexacao WHERE issn IN (${marc}) GROUP BY base`,
     ...issns,
   );
-  for (const b of bases)
+  const atuais = new Map(indexacoesDoVeiculo(veiculoId).map((i) => [i.base, i]));
+  for (const b of bases) {
+    // nunca rebaixa um dado já confirmado na fonte oficial
+    if (b.selo !== "confirmado_oficial" && atuais.get(b.base)?.selo === "confirmado_oficial") continue;
+    const deMiguilim = b.fonte === "Miguilim";
     salvarIndexacao(donoId, veiculoId, {
       base: b.base,
       situacao: b.interrompida ? "interrompida" : "ativa",
-      selo: "confirmado_oficial",
-      fonte: b.interrompida && b.ate ? `Lista oficial ${b.base} (indexada até ${b.ate.split("-").reverse().join("/")})` : `Lista oficial ${b.base}`,
+      selo: b.selo,
+      fonte: deMiguilim
+        ? "Miguilim (IBICT), informado pela revista"
+        : b.interrompida && b.ate
+          ? `Lista oficial ${b.base} (indexada até ${b.ate.split("-").reverse().join("/")})`
+          : `Lista oficial ${b.base}`,
     });
+  }
+  // h5 (Google Acadêmico) e APC declarados no Miguilim
+  const mig = um<{ h5: number | null; apc_valor: number | null; apc_moeda: string | null }>(
+    `SELECT h5, apc_valor, apc_moeda FROM ref_miguilim WHERE issn IN (${marc}) LIMIT 1`,
+    ...issns,
+  );
+  if (mig) {
+    const base = { periodo: String(new Date().getFullYear()), selo: "informado_revista", fonte: "Miguilim (IBICT)" };
+    if (mig.h5 !== null) salvarMetrica(donoId, veiculoId, { ...base, indicador: "H5", valor: String(mig.h5) });
+    if (mig.apc_valor !== null)
+      salvarMetrica(donoId, veiculoId, { ...base, indicador: mig.apc_moeda === "USD" ? "APC_USD" : "APC_BRL", valor: String(mig.apc_valor) });
+  }
   if (bases.length) achados.push(bases.map((b) => b.base).join(", "));
 
   const jcr = um<{ ano: string; jif: string | null; jif5: string | null; jci: string | null; quartil: string | null; categoria: string | null; edicao: string | null }>(

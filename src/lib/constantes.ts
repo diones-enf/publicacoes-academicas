@@ -95,6 +95,7 @@ export const INDICADORES: { chave: string; nome: string }[] = [
   { chave: "IMPACTO_2A_OPENALEX", nome: "Impacto médio 2 anos (OpenAlex)" },
   { chave: "H_OPENALEX", nome: "Índice h (OpenAlex)" },
   { chave: "APC_USD", nome: "APC cobrada (US$)" },
+  { chave: "APC_BRL", nome: "APC cobrada (R$)" },
 ];
 
 export const ESTRATOS_QUALIS = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "C"];
@@ -138,6 +139,18 @@ export const BASES_INDEXACAO = [
   "Sumários.org",
   "HeinOnline",
   "vLex",
+  "Diadorim",
+  "Oasisbr",
+  "ROAD",
+  "CLASE",
+  "BIBLAT",
+  "Periódica",
+  "LatinREV",
+  "CAB Abstracts",
+  "Index Copernicus",
+  "BASE",
+  "EBSCO",
+  "Portal de Periódicos CAPES",
 ];
 
 /** Bases cuja lista oficial de revistas pode ser importada (planilha com ISSN). */
