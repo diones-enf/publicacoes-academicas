@@ -7,6 +7,7 @@ import { emailConfigurado } from "@/lib/email";
 import { dataBr } from "@/lib/texto";
 import { BotaoAcao } from "@/componentes/Acoes";
 import { AtualizarSistema } from "@/componentes/AtualizarSistema";
+import { CriarAtalho } from "@/componentes/Atalho";
 import { EditorTipos, ExcluirTudo, FormLeitor, FormPerfil, FormSenha } from "./Formularios";
 
 export default async function Configuracoes() {
@@ -24,6 +25,10 @@ export default async function Configuracoes() {
       <section className="cartao">
         <h2 style={{ marginTop: 0 }}>Atualização do sistema</h2>
         <AtualizarSistema />
+      </section>
+      <section className="cartao">
+        <h2 style={{ marginTop: 0 }}>Atalho na área de trabalho</h2>
+        <CriarAtalho />
       </section>
       <section className="cartao">
         <h2 style={{ marginTop: 0 }}>Seus dados</h2>
