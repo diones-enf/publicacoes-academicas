@@ -3,9 +3,14 @@
 import { executar, inserir, todos, transacao, um } from "./db";
 import { obrasPorDoi, obrasPorTitulo, quemCitou, type ObraCitada } from "./conectores/openalexCitacoes";
 import { crossrefPorDoi } from "./conectores/crossref";
-import { hojeIso, similaridade } from "./texto";
+import { hojeIso, normalizar, normalizarOrcid, similaridade } from "./texto";
+import { buscarUsuario, nomesCitacaoDe } from "./auth";
+import { localizarAutorPrincipal } from "./autoria";
+import type { AutorOA } from "./conectores/openalexCitacoes";
 
-export const FONTES_CITACAO = ["OpenAlex", "Crossref", "Google Acadêmico", "Web of Science", "Scopus"] as const;
+/** Citações do OpenAlex descontando as feitas por você ou pelos coautores do próprio artigo. */
+export const FONTE_SEM_AUTO = "OpenAlex sem autocitações";
+export const FONTES_CITACAO = ["OpenAlex", FONTE_SEM_AUTO, "Crossref", "Google Acadêmico", "Web of Science", "Scopus"] as const;
 /** Fontes sem consulta pública gratuita: o número é digitado. */
 export const FONTES_MANUAIS = ["Google Acadêmico", "Web of Science", "Scopus"];
 
@@ -37,7 +42,7 @@ function ultimoTotal(publicacaoId: number, fonte: string, antesDe?: string): num
 }
 
 /** Grava a foto do mês. Se a publicação ganhou citações desde a última foto, cria um aviso. */
-export function registrarCitacoes(donoId: number, publicacaoId: number, fonte: string, total: number, mes = mesAtual()): boolean {
+export function registrarCitacoes(donoId: number, publicacaoId: number, fonte: string, total: number, mes = mesAtual(), alertar = true): boolean {
   const anterior = ultimoTotal(publicacaoId, fonte);
   executar(
     `INSERT INTO citacao_mensal (publicacao_id, fonte, mes, total) VALUES (?, ?, ?, ?)
@@ -47,7 +52,7 @@ export function registrarCitacoes(donoId: number, publicacaoId: number, fonte: s
     mes,
     total,
   );
-  if (anterior !== null && total > anterior) {
+  if (alertar && anterior !== null && total > anterior) {
     const titulo = um<{ titulo: string }>("SELECT titulo FROM publicacao WHERE id = ?", publicacaoId)?.titulo ?? "";
     const ja = um(
       "SELECT 1 FROM lembrete WHERE dono_id = ? AND tipo = 'nova_citacao' AND publicacao_id = ? AND data_alvo = ? AND mensagem LIKE ?",
@@ -148,6 +153,16 @@ export async function atualizarCitacoes(donoId: number, opcoes: { comCitantes?: 
       totalOA += obra.citacoes;
       executar("UPDATE publicacao SET openalex_id = ? WHERE id = ?", obra.id, pub.id);
       if (registrarCitacoes(donoId, pub.id, "OpenAlex", obra.citacoes, mes)) novas++;
+      executar(
+        `INSERT INTO impacto_mensal (publicacao_id, mes, fwci, percentil, top10, top1) VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(publicacao_id, mes) DO UPDATE SET fwci = excluded.fwci, percentil = excluded.percentil, top10 = excluded.top10, top1 = excluded.top1`,
+        pub.id,
+        mes,
+        obra.fwci,
+        obra.percentil,
+        obra.top10,
+        obra.top1,
+      );
       executar("DELETE FROM citacao_ano WHERE publicacao_id = ? AND fonte = 'OpenAlex'", pub.id);
       for (const a of obra.porAno)
         executar("INSERT INTO citacao_ano (publicacao_id, fonte, ano, total) VALUES (?, 'OpenAlex', ?, ?)", pub.id, a.ano, a.total);
@@ -167,7 +182,9 @@ export async function atualizarCitacoes(donoId: number, opcoes: { comCitantes?: 
     }
   }
 
-  // 3. Quem citou (OpenAlex)
+  // 3. Quem citou (OpenAlex), separando autocitações
+  const u = buscarUsuario(donoId);
+  const principal = u ? { nome: u.nome, orcid: u.orcid, nomesCitacao: nomesCitacaoDe(u) } : null;
   if (opcoes.comCitantes !== false) {
     for (const { pub, obra } of achadas.filter((a) => a.obra.citacoes > 0)) {
       try {
@@ -175,8 +192,10 @@ export async function atualizarCitacoes(donoId: number, opcoes: { comCitantes?: 
         transacao(() => {
           for (const c of lista)
             executar(
-              `INSERT INTO trabalho_citante (publicacao_id, fonte, id_externo, titulo, ano, data, doi, revista) VALUES (?, 'OpenAlex', ?, ?, ?, ?, ?, ?)
-               ON CONFLICT(publicacao_id, fonte, id_externo) DO UPDATE SET titulo = excluded.titulo, ano = excluded.ano, data = excluded.data, doi = excluded.doi, revista = excluded.revista`,
+              `INSERT INTO trabalho_citante (publicacao_id, fonte, id_externo, titulo, ano, data, doi, revista, autocitacao, autores, paises)
+               VALUES (?, 'OpenAlex', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(publicacao_id, fonte, id_externo) DO UPDATE SET titulo = excluded.titulo, ano = excluded.ano, data = excluded.data,
+                 doi = excluded.doi, revista = excluded.revista, autocitacao = excluded.autocitacao, autores = excluded.autores, paises = excluded.paises`,
               pub.id,
               c.id,
               c.titulo,
@@ -184,6 +203,9 @@ export async function atualizarCitacoes(donoId: number, opcoes: { comCitantes?: 
               c.data,
               c.doi,
               c.revista,
+              tipoDeAutocitacao(obra.autores, c.autores, principal),
+              c.autores.map((a) => a.nome).join("; "),
+              c.paises.join(","),
             );
         });
       } catch (e) {
@@ -191,6 +213,16 @@ export async function atualizarCitacoes(donoId: number, opcoes: { comCitantes?: 
       }
     }
   }
+  // Total sem autocitações (para todas as publicações encontradas, inclusive as com 0)
+  transacao(() => {
+    for (const { pub, obra } of achadas) {
+      const auto = um<{ n: number }>(
+        "SELECT COUNT(*) AS n FROM trabalho_citante WHERE publicacao_id = ? AND fonte = 'OpenAlex' AND autocitacao IS NOT NULL",
+        pub.id,
+      )?.n ?? 0;
+      registrarCitacoes(donoId, pub.id, FONTE_SEM_AUTO, Math.max(0, obra.citacoes - auto), mes, false);
+    }
+  });
 
   recalcularIndicadores(donoId, mes);
   const h = um<{ h: number }>("SELECT h FROM indicador_mensal WHERE dono_id = ? AND fonte = 'OpenAlex' AND mes = ?", donoId, mes)?.h ?? 0;
@@ -225,15 +257,28 @@ export function citacoesDaPublicacao(publicacaoId: number) {
     "SELECT ano, total FROM citacao_ano WHERE publicacao_id = ? AND fonte = 'OpenAlex' ORDER BY ano",
     publicacaoId,
   );
-  const citantes = todos<{ titulo: string | null; ano: number | null; data: string | null; doi: string | null; revista: string | null; id_externo: string }>(
-    "SELECT titulo, ano, data, doi, revista, id_externo FROM trabalho_citante WHERE publicacao_id = ? ORDER BY COALESCE(data, ano || '-12-31'), id",
+  const citantes = todos<{
+    titulo: string | null; ano: number | null; data: string | null; doi: string | null; revista: string | null; id_externo: string;
+    autocitacao: string | null; autores: string | null; paises: string | null;
+  }>(
+    "SELECT titulo, ano, data, doi, revista, id_externo, autocitacao, autores, paises FROM trabalho_citante WHERE publicacao_id = ? ORDER BY COALESCE(data, ano || '-12-31'), id",
     publicacaoId,
   );
+  const impacto =
+    um<{ mes: string; fwci: number | null; percentil: number | null; top10: number; top1: number }>(
+      "SELECT mes, fwci, percentil, top10, top1 FROM impacto_mensal WHERE publicacao_id = ? ORDER BY mes DESC LIMIT 1",
+      publicacaoId,
+    ) ?? null;
+  const autocitacoes = {
+    propria: citantes.filter((c) => c.autocitacao === "propria").length,
+    coautor: citantes.filter((c) => c.autocitacao === "coautor").length,
+    terceiros: citantes.filter((c) => !c.autocitacao).length,
+  };
   const primeira =
     citantes.find((c) => c.data || c.ano)?.data ??
     (citantes[0]?.ano ? String(citantes[0].ano) : null) ??
     (porAno.find((a) => a.total > 0)?.ano ? String(porAno.find((a) => a.total > 0)!.ano) : null);
-  return { atuais, historico, porAno, citantes, primeira };
+  return { atuais, historico, porAno, citantes, primeira, impacto, autocitacoes };
 }
 
 export function resumoCitacoes(donoId: number) {
@@ -256,9 +301,16 @@ export function resumoCitacoes(donoId: number) {
   );
   const ultimo = (fonte: string) =>
     `(SELECT total FROM citacao_mensal c WHERE c.publicacao_id = p.id AND c.fonte = '${fonte}' ORDER BY mes DESC LIMIT 1)`;
-  const maisCitadas = todos<{ id: number; titulo: string; ano: number | null; doi: string | null; oa: number | null; cr: number | null; gs: number | null; wos: number | null; sc: number | null }>(
-    `SELECT p.id, p.titulo, p.ano, p.doi, ${ultimo("OpenAlex")} AS oa, ${ultimo("Crossref")} AS cr, ${ultimo("Google Acadêmico")} AS gs,
-            ${ultimo("Web of Science")} AS wos, ${ultimo("Scopus")} AS sc
+  const maisCitadas = todos<{
+    id: number; titulo: string; ano: number | null; doi: string | null; oa: number | null; semAuto: number | null; cr: number | null;
+    gs: number | null; wos: number | null; sc: number | null; fwci: number | null; percentil: number | null; top10: number | null; auto: number;
+  }>(
+    `SELECT p.id, p.titulo, p.ano, p.doi, ${ultimo("OpenAlex")} AS oa, ${ultimo(FONTE_SEM_AUTO)} AS semAuto, ${ultimo("Crossref")} AS cr,
+            ${ultimo("Google Acadêmico")} AS gs, ${ultimo("Web of Science")} AS wos, ${ultimo("Scopus")} AS sc,
+            (SELECT fwci FROM impacto_mensal i WHERE i.publicacao_id = p.id ORDER BY mes DESC LIMIT 1) AS fwci,
+            (SELECT percentil FROM impacto_mensal i WHERE i.publicacao_id = p.id ORDER BY mes DESC LIMIT 1) AS percentil,
+            (SELECT top10 FROM impacto_mensal i WHERE i.publicacao_id = p.id ORDER BY mes DESC LIMIT 1) AS top10,
+            (SELECT COUNT(*) FROM trabalho_citante t WHERE t.publicacao_id = p.id AND t.autocitacao IS NOT NULL) AS auto
        FROM publicacao p WHERE p.dono_id = ? AND p.status IN ('Publicado', 'Apresentado')
       ORDER BY COALESCE(oa, 0) DESC, COALESCE(cr, 0) DESC, COALESCE(gs, 0) DESC, p.ano DESC`,
     donoId,
@@ -267,7 +319,27 @@ export function resumoCitacoes(donoId: number) {
     "SELECT MAX(registrado_em) AS em FROM citacao_mensal c JOIN publicacao p ON p.id = c.publicacao_id WHERE p.dono_id = ? AND c.fonte IN ('OpenAlex', 'Crossref')",
     donoId,
   )?.em;
-  return { atuais, serie, porAno, maisCitadas, ultimaAtualizacao: ultimaAtualizacao ?? null };
+  // Quem cita você (citações de terceiros e autocitações, por revista e por país)
+  const citantes = todos<{ revista: string | null; paises: string | null; autocitacao: string | null }>(
+    `SELECT t.revista, t.paises, t.autocitacao FROM trabalho_citante t JOIN publicacao p ON p.id = t.publicacao_id WHERE p.dono_id = ?`,
+    donoId,
+  );
+  const contar = (chaves: string[]) =>
+    [...chaves.reduce((m, k) => m.set(k, (m.get(k) ?? 0) + 1), new Map<string, number>())].sort((a, b) => b[1] - a[1]);
+  const quemCita = {
+    total: citantes.length,
+    propria: citantes.filter((c) => c.autocitacao === "propria").length,
+    coautor: citantes.filter((c) => c.autocitacao === "coautor").length,
+    revistas: contar(citantes.map((c) => c.revista || "(sem revista)")).slice(0, 15),
+    paises: contar(citantes.flatMap((c) => (c.paises ? c.paises.split(",").filter(Boolean) : ["(não informado)"]))).slice(0, 15),
+  };
+  const comFwci = maisCitadas.filter((m) => m.fwci !== null);
+  const impacto = {
+    fwciMedio: comFwci.length ? Math.round((comFwci.reduce((s, m) => s + (m.fwci ?? 0), 0) / comFwci.length) * 100) / 100 : null,
+    top10: maisCitadas.filter((m) => m.top10).length,
+    comFwci: comFwci.length,
+  };
+  return { atuais, serie, porAno, maisCitadas, ultimaAtualizacao: ultimaAtualizacao ?? null, quemCita, impacto };
 }
 
 /** Totais atuais por publicação (para listas e relatórios). */
@@ -281,4 +353,26 @@ export function citacoesAtuais(donoId: number): Map<number, number> {
   ))
     m.set(r.publicacao_id, r.total);
   return m;
+}
+
+/**
+ * 'propria' = você está entre os autores de quem citou; 'coautor' = algum coautor
+ * do artigo citado está entre os autores de quem citou; null = citação de terceiros.
+ * Compara pelo identificador de autor do OpenAlex, depois ORCID, depois nome.
+ */
+export function tipoDeAutocitacao(
+  autoresCitado: AutorOA[],
+  autoresQuemCitou: AutorOA[],
+  principal: { nome: string; orcid: string | null; nomesCitacao: string[] } | null,
+): "propria" | "coautor" | null {
+  const idxEu = principal ? localizarAutorPrincipal(autoresCitado.map((a) => ({ nome: a.nome, orcid: a.orcid })), principal) : -1;
+  const eu = idxEu >= 0 ? autoresCitado[idxEu] : null;
+  const mesmo = (a: AutorOA, b: AutorOA) =>
+    (!!a.id && a.id === b.id) || (!!a.orcid && normalizarOrcid(a.orcid) === normalizarOrcid(b.orcid)) || (!!a.nome && normalizar(a.nome) === normalizar(b.nome));
+  const souEuNaCitante =
+    (eu && autoresQuemCitou.some((c) => mesmo(c, eu))) ||
+    (principal && localizarAutorPrincipal(autoresQuemCitou.map((a) => ({ nome: a.nome, orcid: a.orcid })), principal) >= 0);
+  if (souEuNaCitante) return "propria";
+  const coautores = autoresCitado.filter((_, i) => i !== idxEu);
+  return autoresQuemCitou.some((c) => coautores.some((k) => mesmo(c, k))) ? "coautor" : null;
 }

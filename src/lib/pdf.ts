@@ -12,7 +12,10 @@ const COR_CABECALHO = "#eef1f5";
 function texto(c: Celula, moeda: boolean): string {
   if (c === null || c === undefined || c === "") return "";
   if (typeof c === "number")
-    return moeda
+    // anos (1900–2100) sem separador de milhar: 2026, não 2.026
+    return !moeda && Number.isInteger(c) && c >= 1900 && c <= 2100
+      ? String(c)
+      : moeda
       ? c.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
       : c.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
   return String(c).replace(/\*\*/g, "");

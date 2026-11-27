@@ -103,3 +103,42 @@ describe("Web of Science e Scopus por digitação", () => {
     expect(() => lancarCitacoesManual(ctx.donoId, a, 1, "Outra")).toThrow("Fonte inválida");
   });
 });
+
+describe("autocitações e impacto (formato real do OpenAlex)", () => {
+  it("classifica citações suas, de coautores e de terceiros pelo identificador de autor", async () => {
+    const { tipoDeAutocitacao } = await import("@/lib/citacoes");
+    const eu = { nome: "Diones da Rocha Rosa", orcid: "0009-0003-6024-5069", nomesCitacao: ["ROSA, D. R."] };
+    const citado = [
+      { id: "A1", nome: "Felipe de Bem Scarsanela", orcid: null },
+      { id: "A2", nome: "Mauro de Deus Passos", orcid: null },
+      { id: "A9", nome: "Diones da Rocha Rosa", orcid: null },
+    ];
+    // caso real: quem citou tem Mauro e Felipe, coautores do artigo citado
+    expect(tipoDeAutocitacao(citado, [{ id: "A2", nome: "Mauro de Deus Passos", orcid: null }, { id: "A7", nome: "Outra Pessoa", orcid: null }], eu)).toBe("coautor");
+    expect(tipoDeAutocitacao(citado, [{ id: "A9", nome: "Diones da Rocha Rosa", orcid: null }], eu)).toBe("propria");
+    expect(tipoDeAutocitacao(citado, [{ id: "A8", nome: "Terceiro Qualquer", orcid: null }], eu)).toBeNull();
+  });
+  it("guarda FWCI, percentil e o total sem autocitações", async () => {
+    const ctx = await novoAmbiente();
+    const a = await criarPublicacao(ctx, artigo(ctx, { titulo: "Artigo A", doi: "10.1590/a.1" }));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      const u = decodeURIComponent(String(url));
+      let corpo: unknown = { results: [] };
+      if (u.includes("filter=doi:")) corpo = { results: [{ id: "https://openalex.org/W1", doi: "https://doi.org/10.1590/a.1", title: "Artigo A", publication_year: 2025, cited_by_count: 3, counts_by_year: [], fwci: 3.0787, citation_normalized_percentile: { value: 0.828, is_in_top_10_percent: false, is_in_top_1_percent: false }, authorships: [{ author: { id: "https://openalex.org/A1", display_name: "Paulo Souza" } }, { author: { id: "https://openalex.org/A9", display_name: "Daniela Rodrigues Rosa" } }] }] };
+      else if (u.includes("filter=cites:W1")) corpo = { results: [
+        { id: "https://openalex.org/W5", title: "Do coautor", publication_year: 2026, authorships: [{ author: { id: "https://openalex.org/A1", display_name: "Paulo Souza" }, countries: ["BR"] }] },
+        { id: "https://openalex.org/W6", title: "De terceiros", publication_year: 2026, authorships: [{ author: { id: "https://openalex.org/A5", display_name: "John Doe" }, countries: ["US"] }] },
+        { id: "https://openalex.org/W7", title: "Meu", publication_year: 2026, authorships: [{ author: { id: "https://openalex.org/A9", display_name: "Daniela Rodrigues Rosa" }, countries: ["BR"] }] },
+      ] };
+      return new Response(JSON.stringify(corpo), { status: 200 });
+    }));
+    await atualizarCitacoes(ctx.donoId);
+    const d = citacoesDaPublicacao(a);
+    expect(d.impacto).toMatchObject({ fwci: 3.08, percentil: 82.8, top10: 0 });
+    expect(d.autocitacoes).toEqual({ propria: 1, coautor: 1, terceiros: 1 });
+    expect(d.atuais.find((x) => x.fonte === "OpenAlex sem autocitações")!.total).toBe(1);
+    const res = resumoCitacoes(ctx.donoId);
+    expect(res.quemCita.paises.map(([p]) => p).sort()).toEqual(["BR", "US"]);
+    expect(res.impacto.fwciMedio).toBe(3.08);
+  });
+});

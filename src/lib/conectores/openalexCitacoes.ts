@@ -11,6 +11,12 @@ function extras(): string {
   return p.length ? `&${p.join("&")}` : "";
 }
 
+export interface AutorOA {
+  id: string | null; // A123... (identificador do autor no OpenAlex)
+  nome: string;
+  orcid: string | null;
+}
+
 export interface ObraCitada {
   id: string; // W123...
   doi: string | null;
@@ -18,6 +24,11 @@ export interface ObraCitada {
   ano: number | null;
   citacoes: number;
   porAno: { ano: number; total: number }[];
+  autores: AutorOA[];
+  fwci: number | null; // impacto normalizado pela área e ano (1 = média)
+  percentil: number | null; // 0 a 100
+  top10: boolean;
+  top1: boolean;
 }
 
 interface OaObra {
@@ -30,9 +41,20 @@ interface OaObra {
   cited_by_count?: number;
   counts_by_year?: { year: number; cited_by_count: number }[];
   primary_location?: { source?: { display_name?: string } | null } | null;
+  authorships?: { author?: { id?: string | null; display_name?: string; orcid?: string | null }; countries?: string[] }[];
+  fwci?: number | null;
+  citation_normalized_percentile?: { value?: number; is_in_top_1_percent?: boolean; is_in_top_10_percent?: boolean } | null;
 }
 
-const SELECAO = "id,doi,title,display_name,publication_year,cited_by_count,counts_by_year";
+function autoresDe(o: OaObra): AutorOA[] {
+  return (o.authorships ?? []).map((a) => ({
+    id: a.author?.id ? idCurto(a.author.id) : null,
+    nome: a.author?.display_name ?? "",
+    orcid: a.author?.orcid ? a.author.orcid.replace(/^https?:\/\/orcid\.org\//, "") : null,
+  }));
+}
+
+const SELECAO = "id,doi,title,display_name,publication_year,cited_by_count,counts_by_year,authorships,fwci,citation_normalized_percentile";
 
 export function idCurto(id: string): string {
   return id.split("/").pop() ?? id;
@@ -46,6 +68,12 @@ export function converterObra(o: OaObra): ObraCitada {
     ano: o.publication_year ?? null,
     citacoes: o.cited_by_count ?? 0,
     porAno: (o.counts_by_year ?? []).map((c) => ({ ano: c.year, total: c.cited_by_count })),
+    autores: autoresDe(o),
+    fwci: typeof o.fwci === "number" ? Math.round(o.fwci * 100) / 100 : null,
+    percentil:
+      typeof o.citation_normalized_percentile?.value === "number" ? Math.round(o.citation_normalized_percentile.value * 1000) / 10 : null,
+    top10: !!o.citation_normalized_percentile?.is_in_top_10_percent,
+    top1: !!o.citation_normalized_percentile?.is_in_top_1_percent,
   };
 }
 
@@ -82,6 +110,8 @@ export interface TrabalhoCitante {
   data: string | null;
   doi: string | null;
   revista: string | null;
+  autores: AutorOA[];
+  paises: string[];
 }
 
 /** Trabalhos que citaram a obra (até 200, do mais antigo para o mais novo). */
@@ -90,7 +120,7 @@ export async function quemCitou(idObra: string): Promise<TrabalhoCitante[]> {
   for (let pagina = 1; pagina <= 2; pagina++) {
     const r = await buscarJson<{ results: OaObra[]; meta?: { count?: number } }>(
       "OpenAlex",
-      `${BASE}/works?filter=cites:${idCurto(idObra)}&per-page=100&page=${pagina}&sort=publication_date:asc&select=id,doi,title,display_name,publication_year,publication_date,primary_location${extras()}`,
+      `${BASE}/works?filter=cites:${idCurto(idObra)}&per-page=100&page=${pagina}&sort=publication_date:asc&select=id,doi,title,display_name,publication_year,publication_date,primary_location,authorships${extras()}`,
       { tempoMs: 20000 },
     );
     const lista = r?.results ?? [];
@@ -102,6 +132,8 @@ export async function quemCitou(idObra: string): Promise<TrabalhoCitante[]> {
         data: o.publication_date ?? null,
         doi: normalizarDoi(o.doi ?? null),
         revista: o.primary_location?.source?.display_name ?? null,
+        autores: autoresDe(o),
+        paises: [...new Set((o.authorships ?? []).flatMap((a) => a.countries ?? []))],
       })),
     );
     if (lista.length < 100) break;

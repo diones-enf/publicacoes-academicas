@@ -11,6 +11,7 @@ import { MudarStatus, Ressubmeter } from "@/componentes/MudarStatus";
 import { FormLancamento } from "@/componentes/FormLancamento";
 import { VincularVersao } from "./VincularVersao";
 import { citacoesDaPublicacao, FONTES_MANUAIS } from "@/lib/citacoes";
+import { nomePais } from "@/lib/paises";
 import { FormCitacaoManual } from "@/componentes/Citacoes";
 
 const ROTULOS: Record<string, string> = {
@@ -339,6 +340,21 @@ export default async function Detalhe({ params }: { params: Promise<{ id: string
             <FormCitacaoManual key={f} publicacaoId={id} fonte={f} atual={cit.atuais.find((c) => c.fonte === f)?.total ?? null} />
           ))}
         </div>
+        {cit.impacto && cit.impacto.fwci !== null && (
+          <p>
+            Impacto comparado com a área (OpenAlex): <strong>FWCI {String(cit.impacto.fwci).replace(".", ",")}</strong>
+            {cit.impacto.percentil !== null && <> · percentil <strong>{String(cit.impacto.percentil).replace(".", ",")}</strong></>}
+            {cit.impacto.top1 ? <span className="selo verde" style={{ marginLeft: 6 }}>top 1%</span> : cit.impacto.top10 ? <span className="selo verde" style={{ marginLeft: 6 }}>top 10%</span> : null}
+            <br />
+            <small className="suave">FWCI 1,0 = média de artigos da mesma área e ano. Percentil 90 = mais citado que 90% dos artigos parecidos.</small>
+          </p>
+        )}
+        {cit.citantes.length > 0 && (
+          <p>
+            Das citações encontradas: <strong>{cit.autocitacoes.terceiros}</strong> de terceiros, <strong>{cit.autocitacoes.coautor}</strong> de coautores e{" "}
+            <strong>{cit.autocitacoes.propria}</strong> suas.
+          </p>
+        )}
         {cit.primeira && <p>Primeira citação: <strong>{cit.primeira.length > 4 ? dataBr(cit.primeira) : cit.primeira}</strong></p>}
         {cit.porAno.length > 0 && (
           <p>Por ano (OpenAlex): {cit.porAno.map((a) => `${a.ano}: ${a.total}`).join(" · ")}</p>
@@ -357,6 +373,9 @@ export default async function Detalhe({ params }: { params: Promise<{ id: string
                 <li key={c.id_externo}>
                   <a href={c.doi ? `https://doi.org/${c.doi}` : `https://openalex.org/${c.id_externo}`} target="_blank" rel="noreferrer">{c.titulo || "(sem título)"}</a>
                   {c.revista ? ` — ${c.revista}` : ""}{c.ano ? ` (${c.ano})` : ""}
+                  {c.autocitacao === "propria" && <span className="selo amarelo" style={{ marginLeft: 6 }}>autocitação (sua)</span>}
+                  {c.autocitacao === "coautor" && <span className="selo amarelo" style={{ marginLeft: 6 }}>de coautor</span>}
+                  {c.paises && <small className="suave"> · {c.paises.split(",").filter(Boolean).map(nomePais).join(", ")}</small>}
                 </li>
               ))}
             </ol>

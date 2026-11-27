@@ -462,4 +462,18 @@ export const MIGRACOES: string[] = [
     taxas TEXT
   );
   `,
+  /* 11 — citações: autocitações, países de quem citou e impacto normalizado (FWCI, percentil) */ `
+  ALTER TABLE trabalho_citante ADD COLUMN autocitacao TEXT;   -- 'propria' | 'coautor' | NULL
+  ALTER TABLE trabalho_citante ADD COLUMN autores TEXT;
+  ALTER TABLE trabalho_citante ADD COLUMN paises TEXT;
+  CREATE TABLE impacto_mensal (
+    publicacao_id INTEGER NOT NULL REFERENCES publicacao(id) ON DELETE CASCADE,
+    mes TEXT NOT NULL,
+    fwci REAL,
+    percentil REAL,
+    top10 INTEGER NOT NULL DEFAULT 0,
+    top1 INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (publicacao_id, mes)
+  );
+  `,
 ];

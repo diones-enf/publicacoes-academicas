@@ -4,7 +4,8 @@ import { listarPublicacoes, possiveisDuplicatas, type Filtros, type LinhaLista }
 import { listarLancamentos, proximosPagamentos } from "./custos";
 import { rankingCoautores, redeColaboracao } from "./coautores";
 import { referenciaAbnt, referenciaVancouver } from "./referencias";
-import { resumoCitacoes } from "./citacoes";
+import { FONTE_SEM_AUTO, resumoCitacoes } from "./citacoes";
+import { nomePais } from "./paises";
 import { resumoRevistasPorQualis } from "./veiculos";
 import { competenciaBr, dataBr, diasEntre, reais } from "./texto";
 import { ESTRATOS_QUALIS, STATUS_SUBMISSOES } from "./constantes";
@@ -45,6 +46,7 @@ export const RELATORIOS: { chave: string; titulo: string; descricao: string }[] 
   { chave: "livros", titulo: "Livros e capítulos", descricao: "Editora, ISBN, DOI, organizadores e páginas." },
   { chave: "jornais", titulo: "Jornais e divulgação", descricao: "Veículo, data e link." },
   { chave: "indicadores", titulo: "Indicadores do pesquisador", descricao: "Totais por ano, tipo e estrato Qualis, com/sem JCR e % como autor principal." },
+  { chave: "citacoes", titulo: "Citações", descricao: "Citações por fonte, índice h e i10 (com e sem autocitações), impacto comparado com a área e quem cita você." },
   { chave: "revistas", titulo: "Revistas por Qualis", descricao: "Quantas revistas e publicações em cada estrato Qualis, por área de avaliação." },
   { chave: "qualidade", titulo: "Qualidade dos dados", descricao: "Itens sem DOI, sem Qualis, com métrica não confirmada ou possível duplicata." },
   { chave: "referencias", titulo: "Referências formatadas", descricao: "Lista em ABNT NBR 6023 ou Vancouver, pronta para currículo, edital ou memorial." },
@@ -447,7 +449,7 @@ export function gerarRelatorio(chave: string, donoId: number, f: Filtros, o: Opc
 }
 
 /** Colunas que são contagens e podem ser somadas na linha de total. */
-const SOMAVEIS = /^(itens|publica[cç][oõ]es|revistas|total|com jcr|sem jcr|trabalhos em comum)$/i;
+const SOMAVEIS = /^(itens|publica[cç][oõ]es|revistas|total|com jcr|sem jcr|trabalhos em comum|cita[cç][oõ]es)$/i;
 
 /** Acrescenta a linha de total às tabelas que ainda não têm. */
 function adicionarTotais(t: Tabela) {
@@ -512,7 +514,54 @@ function gerarSemTotais(chave: string, donoId: number, f: Filtros, o: OpcoesRela
       return relatorioReferencias(donoId, f, o, area);
     case "revistas":
       return relatorioRevistas(donoId, area);
+    case "citacoes":
+      return relatorioCitacoes(donoId);
     default:
       return null;
   }
+}
+
+function relatorioCitacoes(donoId: number): Relatorio {
+  const r = resumoCitacoes(donoId);
+  const oa = r.atuais.find((a) => a.fonte === "OpenAlex");
+  const semAuto = r.atuais.find((a) => a.fonte === FONTE_SEM_AUTO);
+  const num = (v: number | null | undefined) => (v === null || v === undefined ? "" : v);
+  const serieOA = r.serie.filter((s) => s.fonte === "OpenAlex");
+  return {
+    chave: "citacoes",
+    titulo: "Citações",
+    descricao:
+      "OpenAlex e Crossref são buscados automaticamente todo mês; Google Acadêmico, Web of Science e Scopus são digitados. " +
+      "Sem autocitações = descontadas as citações feitas por você ou pelos coautores do próprio artigo. FWCI 1,0 = média de artigos da mesma área e ano.",
+    cartoes: [
+      { rotulo: "Citações (OpenAlex)", valor: oa?.total !== undefined ? `${oa.total} · h ${oa.h} · i10 ${oa.i10}` : "—" },
+      { rotulo: "Sem autocitações", valor: semAuto?.total !== undefined ? `${semAuto.total} · h ${semAuto.h}` : "—" },
+      { rotulo: "FWCI médio", valor: r.impacto.fwciMedio !== null ? String(r.impacto.fwciMedio).replace(".", ",") : "—" },
+      { rotulo: "Entre os 10% mais citados", valor: String(r.impacto.top10) },
+    ],
+    graficos: [
+      ...(r.porAno.length ? [{ titulo: "Citações recebidas por ano (OpenAlex)", rotulos: r.porAno.map((p) => String(p.ano)), series: [{ nome: "Citações", valores: r.porAno.map((p) => p.total) }] }] : []),
+    ],
+    tabelas: [
+      {
+        titulo: "Indicadores por fonte",
+        colunas: ["Fonte", "Citações", "Índice h", "Índice i10", "Publicações", "Mês"],
+        linhas: r.atuais.filter((a) => a.total !== undefined).map((a) => [a.fonte, a.total ?? null, a.h ?? null, a.i10 ?? null, a.publicacoes ?? null, a.mes ? competenciaBr(a.mes) : ""]),
+        totais: [`${r.atuais.filter((a) => a.total !== undefined).length} fonte(s); cada uma conta separado`, "", "", "", "", ""],
+      },
+      {
+        titulo: "Publicações",
+        colunas: ["Publicação", "Ano", "OpenAlex", "Sem autocitações", "FWCI", "Percentil", "Crossref", "Google Acadêmico", "Web of Science", "Scopus"],
+        linhas: r.maisCitadas.map((m) => [m.titulo, m.ano, num(m.oa), num(m.semAuto), num(m.fwci), num(m.percentil), num(m.cr), num(m.gs), num(m.wos), num(m.sc)]),
+      },
+      {
+        titulo: "Evolução mês a mês (OpenAlex)",
+        colunas: ["Mês", "Citações", "Índice h", "Índice i10"],
+        linhas: serieOA.map((s) => [competenciaBr(s.mes), s.total, s.h, s.i10]),
+        totais: serieOA.length ? [`${serieOA.length} mês(es) registrados`, "", "", ""] : undefined,
+      },
+      { titulo: "Revistas que citaram", colunas: ["Revista", "Citações"], linhas: r.quemCita.revistas.map(([n, c]) => [n, c]) },
+      { titulo: "Países dos autores que citaram", colunas: ["País", "Citações"], linhas: r.quemCita.paises.map(([n, c]) => [nomePais(n), c]) },
+    ],
+  };
 }
