@@ -2,6 +2,7 @@ import { areaReferencia, contextoDe, exigirUsuario } from "@/lib/sessao";
 import { listarPublicacoes } from "@/lib/filtros";
 import { dataBr } from "@/lib/texto";
 import { Quadro } from "./Quadro";
+import { contarAnexos } from "@/lib/anexos";
 
 export default async function Submissoes({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const u = await exigirUsuario("autor");
@@ -10,6 +11,7 @@ export default async function Submissoes({ searchParams }: { searchParams: Promi
   const area = areaReferencia(u);
   const andamento = listarPublicacoes(ctx.donoId, { secao: "submissoes", q: sp.q }, area);
   const encerrados = listarPublicacoes(ctx.donoId, { secao: "encerrados" }, area);
+  const anexos = contarAnexos(ctx.donoId);
   return (
     <>
       <div className="topo">
@@ -19,7 +21,7 @@ export default async function Submissoes({ searchParams }: { searchParams: Promi
           <a className="botao" href="/publicacoes/nova">+ Nova</a>
         </div>
       </div>
-      <p className="suave">Arraste os cartões entre as colunas ou use &quot;Mover para&quot;. Cada mudança fica registrada com a data.</p>
+      <p className="suave">Arraste os cartões entre as colunas ou use &quot;Mover para&quot;. Cada mudança fica registrada com a data. Use <strong>📎 Anexos</strong> para guardar manuscrito, pareceres, carta de aceite e comprovantes.</p>
       <Quadro
         limiteDias={u.dias_sem_movimentacao}
         cartoes={andamento.map((p) => ({
@@ -32,6 +34,7 @@ export default async function Submissoes({ searchParams }: { searchParams: Promi
           prazo_resposta: p.prazo_resposta,
           rodada_revisao: p.rodada_revisao,
           doi: p.doi,
+          anexos: anexos.get(p.id) ?? 0,
         }))}
       />
       <h2 id="encerrados">Encerrados ({encerrados.length})</h2>

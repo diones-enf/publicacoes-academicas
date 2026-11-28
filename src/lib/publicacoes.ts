@@ -907,7 +907,7 @@ export function mesclarPublicacoes(ctx: Contexto, manterId: number, removerId: n
       );
     const autoresA = um<{ n: number }>("SELECT COUNT(*) n FROM autoria WHERE publicacao_id = ?", manterId)?.n ?? 0;
     if (!autoresA) executar("UPDATE autoria SET publicacao_id = ? WHERE publicacao_id = ?", manterId, removerId);
-    for (const t of ["lancamento_custo", "origem_campo", "tentativa_submissao", "lembrete"])
+    for (const t of ["lancamento_custo", "origem_campo", "tentativa_submissao", "lembrete", "anexo"])
       executar(`UPDATE ${t} SET publicacao_id = ? WHERE publicacao_id = ?`, manterId, removerId);
     executar(
       "UPDATE historico_status SET publicacao_id = ?, desfazer_json = NULL WHERE publicacao_id = ?",

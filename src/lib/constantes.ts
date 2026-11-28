@@ -185,3 +185,36 @@ export const MOEDAS = ["BRL", "USD", "EUR"] as const;
 export const PAGADORES = ["Próprio", "Instituição", "Bolsa", "Coautores"];
 
 export const IDIOMAS = ["Português", "Inglês", "Espanhol", "Francês", "Outro"];
+
+// ---------- Anexos ----------
+
+export const LIMITE_ANEXO_MB = 50;
+
+export const CATEGORIAS_ANEXO = [
+  "Manuscrito",
+  "Comprovante de submissão",
+  "Pareceres dos revisores",
+  "Resposta aos revisores",
+  "Manuscrito revisado",
+  "Carta de aceite",
+  "Carta de decisão (recusa)",
+  "Comprovante de pagamento",
+  "Versão publicada (PDF)",
+  "Certificado",
+  "Termo de cessão / direitos autorais",
+  "Outro",
+];
+
+/** Categoria sugerida quando se anexa ao mudar o status. */
+export const CATEGORIA_DO_STATUS: Record<string, string> = {
+  "Em elaboração": "Manuscrito",
+  Submetido: "Comprovante de submissão",
+  "Em avaliação": "Comprovante de submissão",
+  "Em revisão": "Pareceres dos revisores",
+  Aceito: "Carta de aceite",
+  Publicado: "Versão publicada (PDF)",
+  Apresentado: "Certificado",
+  Recusado: "Carta de decisão (recusa)",
+  Retirado: "Outro",
+};
+

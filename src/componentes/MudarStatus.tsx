@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { api } from "./cliente";
-import { STATUS } from "@/lib/constantes";
+import { CATEGORIA_DO_STATUS, STATUS } from "@/lib/constantes";
+import { enviarAnexos } from "./Anexos";
 
 /** Formulário de mudança de status. Pede DOI e data ao marcar Publicado e prazo ao entrar Em revisão. */
 export function MudarStatus({ id, atual, doiAtual, aoConcluir, inicial }: { id: number; atual: string; doiAtual?: string | null; aoConcluir?: () => void; inicial?: string }) {
@@ -13,6 +14,7 @@ export function MudarStatus({ id, atual, doiAtual, aoConcluir, inicial }: { id: 
   const [erro, setErro] = useState("");
   const [ok, setOk] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [arquivos, setArquivos] = useState<File[]>([]);
   const publicado = status === "Publicado" || status === "Apresentado";
 
   async function enviar(e: React.FormEvent) {
@@ -28,6 +30,14 @@ export function MudarStatus({ id, atual, doiAtual, aoConcluir, inicial }: { id: 
         doi: publicado && doi ? doi : null,
         observacao: obs || null,
       });
+      if (arquivos.length) {
+        try {
+          await enviarAnexos(id, arquivos, CATEGORIA_DO_STATUS[status] ?? "Outro", obs);
+        } catch (er) {
+          setErro(`Status alterado, mas o anexo não foi salvo: ${(er as Error).message}`);
+          return;
+        }
+      }
       if (r.completados?.length) setOk(`Status alterado. Completados pelo DOI: ${r.completados.join(", ")}.`);
       if (aoConcluir) aoConcluir();
       else window.location.reload();
@@ -70,6 +80,11 @@ export function MudarStatus({ id, atual, doiAtual, aoConcluir, inicial }: { id: 
       <div className="campo">
         <label htmlFor={`obs-${id}`}>Observação (opcional)</label>
         <input id={`obs-${id}`} value={obs} onChange={(e) => setObs(e.target.value)} />
+      </div>
+      <div className="campo">
+        <label htmlFor={`arq-st-${id}`}>Anexar documento (opcional): {(CATEGORIA_DO_STATUS[status] ?? "Outro").toLowerCase()}</label>
+        <input id={`arq-st-${id}`} type="file" multiple onChange={(e) => setArquivos(Array.from(e.target.files ?? []))} />
+        <div className="ajuda">Ex.: comprovante de submissão, pareceres, carta de aceite, PDF publicado. Pode mudar o tipo depois, em Anexos.</div>
       </div>
       {erro && <div className="aviso erro" role="alert">{erro}</div>}
       {ok && <div className="aviso ok">{ok}</div>}

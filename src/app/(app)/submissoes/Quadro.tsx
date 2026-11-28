@@ -3,6 +3,8 @@ import { useState } from "react";
 import { api } from "@/componentes/cliente";
 import { MudarStatus } from "@/componentes/MudarStatus";
 import { dataBr, diasEntre, hojeIso } from "@/lib/texto";
+import { Anexos } from "@/componentes/Anexos";
+import { CATEGORIA_DO_STATUS } from "@/lib/constantes";
 
 export interface CartaoSub {
   id: number;
@@ -14,6 +16,7 @@ export interface CartaoSub {
   prazo_resposta: string | null;
   rodada_revisao: number | null;
   doi: string | null;
+  anexos: number;
 }
 
 const COLUNAS = ["Em elaboração", "Submetido", "Em avaliação", "Em revisão", "Aceito"];
@@ -25,6 +28,8 @@ export function Quadro({ cartoes, limiteDias }: { cartoes: CartaoSub[]; limiteDi
   const [sobre, setSobre] = useState<string | null>(null);
   const [modal, setModal] = useState<{ c: CartaoSub; destino: string } | null>(null);
   const [erro, setErro] = useState("");
+  const [anexosDe, setAnexosDe] = useState<CartaoSub | null>(null);
+  const [contagem, setContagem] = useState<Record<number, number>>({});
 
   async function mover(c: CartaoSub, destino: string) {
     if (destino === c.status) return;
@@ -79,6 +84,9 @@ export function Quadro({ cartoes, limiteDias }: { cartoes: CartaoSub[]; limiteDi
                         <span className={`selo ${faltam <= 7 ? "vermelho" : "azul"}`}>Prazo {dataBr(c.prazo_resposta)} ({faltam} dias)</span>
                       )}
                     </div>
+                    <button type="button" className="secundario pequeno" style={{ marginTop: "0.4rem" }} onClick={() => setAnexosDe(c)}>
+                      📎 Anexos ({contagem[c.id] ?? c.anexos})
+                    </button>
                     <label className="pular-para-conteudo" htmlFor={`mover-${c.id}`}>Mover para</label>
                     <select
                       id={`mover-${c.id}`}
@@ -106,6 +114,21 @@ export function Quadro({ cartoes, limiteDias }: { cartoes: CartaoSub[]; limiteDi
           <p className="ajuda suave">Publicado leva o item para Publicados com todo o histórico. Recusado e Retirado vão para Encerrados.</p>
         </section>
       </div>
+      {anexosDe && (
+        <div className="fundo-modal" role="dialog" aria-modal="true" aria-label="Anexos" onClick={(e) => e.target === e.currentTarget && setAnexosDe(null)}>
+          <div className="modal" style={{ maxWidth: 820 }}>
+            <div className="topo">
+              <h2 style={{ margin: 0 }}>Anexos: {anexosDe.titulo}</h2>
+              <button className="secundario pequeno" onClick={() => setAnexosDe(null)} aria-label="Fechar">✕</button>
+            </div>
+            <Anexos
+              publicacaoId={anexosDe.id}
+              categoriaInicial={CATEGORIA_DO_STATUS[anexosDe.status] ?? "Outro"}
+              aoMudar={(n) => setContagem((x) => (x[anexosDe.id] === n ? x : { ...x, [anexosDe.id]: n }))}
+            />
+          </div>
+        </div>
+      )}
       {modal && (
         <div className="fundo-modal" role="dialog" aria-modal="true" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
           <div className="modal">

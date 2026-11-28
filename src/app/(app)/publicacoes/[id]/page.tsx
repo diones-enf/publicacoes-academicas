@@ -13,6 +13,8 @@ import { VincularVersao } from "./VincularVersao";
 import { citacoesDaPublicacao, FONTES_MANUAIS } from "@/lib/citacoes";
 import { nomePais } from "@/lib/paises";
 import { FormCitacaoManual } from "@/componentes/Citacoes";
+import { Anexos } from "@/componentes/Anexos";
+import { CATEGORIA_DO_STATUS } from "@/lib/constantes";
 
 const ROTULOS: Record<string, string> = {
   titulo: "Título", doi: "DOI", data_publicacao: "Data de publicação", data_aceite: "Data de aceite", volume: "Volume",
@@ -323,6 +325,10 @@ export default async function Detalhe({ params }: { params: Promise<{ id: string
         </section>
       </div>
 
+      <section className="cartao" id="anexos">
+        <h2 style={{ marginTop: 0 }}>Anexos e documentos</h2>
+        <Anexos publicacaoId={id} categoriaInicial={CATEGORIA_DO_STATUS[p.status] ?? "Outro"} />
+      </section>
       <section className="cartao" id="citacoes">
         <h2 style={{ marginTop: 0 }}>Citações</h2>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>

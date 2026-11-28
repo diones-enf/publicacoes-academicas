@@ -65,6 +65,7 @@ const TABELAS_DONO: [string, string][] = [
   ["origem_campo", "SELECT o.* FROM origem_campo o JOIN publicacao p ON p.id = o.publicacao_id WHERE p.dono_id = ?1"],
   ["historico_alteracao", "SELECT * FROM historico_alteracao WHERE dono_id = ?1"],
   ["lembrete", "SELECT * FROM lembrete WHERE dono_id = ?1"],
+  ["anexo", "SELECT a.* FROM anexo a JOIN publicacao p ON p.id = a.publicacao_id WHERE p.dono_id = ?1"],
   ["visao_salva", "SELECT * FROM visao_salva WHERE dono_id = ?1"],
   ["log_acesso", "SELECT * FROM log_acesso WHERE usuario_id = ?1 OR usuario_id IN (SELECT id FROM usuario WHERE dono_id = ?1)"],
 ];

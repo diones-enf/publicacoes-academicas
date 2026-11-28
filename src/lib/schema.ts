@@ -491,4 +491,19 @@ export const MIGRACOES: string[] = [
     PRIMARY KEY (dono_id, mes)
   );
   `,
+  /* 13 — anexos: documentos de cada publicação (manuscrito, pareceres, carta de aceite, comprovantes, certificados) */ `
+  CREATE TABLE anexo (
+    id INTEGER PRIMARY KEY,
+    publicacao_id INTEGER NOT NULL REFERENCES publicacao(id) ON DELETE CASCADE,
+    categoria TEXT NOT NULL,
+    nome_original TEXT NOT NULL,
+    arquivo TEXT NOT NULL,           -- caminho dentro de <dados>/anexos
+    tamanho INTEGER NOT NULL,
+    tipo_mime TEXT,
+    status_na_hora TEXT,             -- status da publicação quando foi anexado
+    observacao TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX anexo_publicacao ON anexo(publicacao_id);
+  `,
 ];

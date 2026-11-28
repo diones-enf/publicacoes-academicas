@@ -6,6 +6,7 @@ import { enviarLembretesPorEmail, gerarLembretes } from "./lembretes";
 import { hojeIso } from "./texto";
 import { atualizarCitacoes } from "./citacoes";
 import { atualizarGoogle } from "./googleAcademico";
+import { limparAnexosOrfaos } from "./anexos";
 
 let rodando = false;
 
@@ -20,6 +21,11 @@ export function executarRotinasDoDia(forcar = false) {
       metaGravar("ultimo_backup", new Date().toISOString());
     } catch (e) {
       console.error("Backup diário falhou:", (e as Error).message);
+    }
+    try {
+      limparAnexosOrfaos();
+    } catch (e) {
+      console.error("Limpeza de anexos falhou:", (e as Error).message);
     }
     const novoMes = metaLer("citacoes_mes") !== hoje.slice(0, 7);
     if (novoMes) metaGravar("citacoes_mes", hoje.slice(0, 7));
