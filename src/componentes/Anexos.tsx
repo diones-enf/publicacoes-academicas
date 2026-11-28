@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./cliente";
 import { CATEGORIAS_ANEXO, LIMITE_ANEXO_MB } from "@/lib/constantes";
+import type { LeituraDocumento } from "@/lib/leitorDocumento";
+import { LerDocumento } from "./LerDocumento";
 
 interface Anexo {
   id: number;
@@ -25,7 +27,13 @@ function dataHora(iso: string) {
 }
 
 /** Envia arquivos para uma publicação. Usado também ao mudar o status. */
-export async function enviarAnexos(publicacaoId: number, arquivos: File[], categoria: string, observacao = "") {
+interface Leitura {
+  anexoId: number;
+  nome: string;
+  leitura: LeituraDocumento;
+}
+
+export async function enviarAnexos(publicacaoId: number, arquivos: File[], categoria: string, observacao = ""): Promise<Leitura[]> {
   const grandes = arquivos.filter((f) => f.size > LIMITE_ANEXO_MB * 1024 * 1024);
   if (grandes.length) throw new Error(`Arquivo acima de ${LIMITE_ANEXO_MB} MB: ${grandes.map((f) => f.name).join(", ")}`);
   const form = new FormData();
@@ -36,12 +44,15 @@ export async function enviarAnexos(publicacaoId: number, arquivos: File[], categ
   const d = await r.json().catch(() => ({}));
   if (r.status === 401) window.location.href = "/entrar?expirou=1";
   if (!r.ok) throw new Error((d as { erro?: string }).erro ?? `Erro ${r.status}`);
+  return (d as { leituras?: Leitura[] }).leituras ?? [];
 }
 
-export function Anexos({ publicacaoId, categoriaInicial = "Manuscrito", aoMudar }: { publicacaoId: number; categoriaInicial?: string; aoMudar?: (n: number) => void }) {
+export function Anexos({ publicacaoId, aoMudar }: { publicacaoId: number; categoriaInicial?: string; aoMudar?: (n: number) => void }) {
   const [lista, setLista] = useState<Anexo[] | null>(null);
   const [arquivos, setArquivos] = useState<File[]>([]);
-  const [categoria, setCategoria] = useState(categoriaInicial);
+  const [categoria, setCategoria] = useState("auto");
+  const [leituras, setLeituras] = useState<Leitura[]>([]);
+  const [conferir, setConferir] = useState<Leitura | null>(null);
   const [obs, setObs] = useState("");
   const [sobre, setSobre] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -63,8 +74,9 @@ export function Anexos({ publicacaoId, categoriaInicial = "Manuscrito", aoMudar 
     setOcupado(true);
     setMsg(null);
     try {
-      await enviarAnexos(publicacaoId, arquivos, categoria, obs);
-      setMsg({ t: "ok", m: `${arquivos.length} arquivo(s) anexado(s).` });
+      const l = await enviarAnexos(publicacaoId, arquivos, categoria, obs);
+      setLeituras(l);
+      setMsg({ t: "ok", m: `${arquivos.length} arquivo(s) anexado(s).` + (l.length ? " Li o documento: confira abaixo." : "") });
       setArquivos([]);
       setObs("");
       if (entrada.current) entrada.current.value = "";
@@ -117,6 +129,7 @@ export function Anexos({ publicacaoId, categoriaInicial = "Manuscrito", aoMudar 
           <div className="campo">
             <label htmlFor={`cat-${publicacaoId}`}>Tipo de documento</label>
             <select id={`cat-${publicacaoId}`} value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+              <option value="auto">Descobrir sozinho (lê o arquivo)</option>
               {CATEGORIAS_ANEXO.map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
@@ -128,6 +141,18 @@ export function Anexos({ publicacaoId, categoriaInicial = "Manuscrito", aoMudar 
         <button type="submit" disabled={ocupado || !arquivos.length}>{ocupado ? "Enviando..." : "Anexar"}</button>
       </form>
       {msg && <div className={`aviso ${msg.t}`} role="status">{msg.m}</div>}
+      {conferir ? (
+        <div className="cartao" style={{ marginTop: "0.6rem" }}>
+          <LerDocumento publicacaoFixa={{ id: publicacaoId, titulo: "", status: "" }} anexoId={conferir.anexoId} inicial={conferir} />
+        </div>
+      ) : (
+        leituras.map((l) => (
+          <div key={l.anexoId} className="aviso info">
+            📄 <strong>{l.nome}:</strong> {l.leitura.resumo}{" "}
+            <button type="button" className="pequeno" onClick={() => setConferir(l)}>Conferir e preencher a publicação</button>
+          </div>
+        ))
+      )}
       <div className="tabela-rolagem" style={{ marginTop: "0.8rem" }}>
         {lista === null ? (
           <p className="suave">Carregando...</p>

@@ -3,6 +3,9 @@ import { listarPublicacoes } from "@/lib/filtros";
 import { dataBr } from "@/lib/texto";
 import { Quadro } from "./Quadro";
 import { contarAnexos } from "@/lib/anexos";
+import { todos } from "@/lib/db";
+import { Abrir } from "@/componentes/Painelzinho";
+import { LerDocumento } from "@/componentes/LerDocumento";
 
 export default async function Submissoes({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const u = await exigirUsuario("autor");
@@ -12,11 +15,18 @@ export default async function Submissoes({ searchParams }: { searchParams: Promi
   const andamento = listarPublicacoes(ctx.donoId, { secao: "submissoes", q: sp.q }, area);
   const encerrados = listarPublicacoes(ctx.donoId, { secao: "encerrados" }, area);
   const anexos = contarAnexos(ctx.donoId);
+  const todas = todos<{ id: number; titulo: string; status: string }>(
+    "SELECT id, titulo, status FROM publicacao WHERE dono_id = ? ORDER BY ultima_movimentacao DESC, id DESC",
+    ctx.donoId,
+  );
   return (
     <>
       <div className="topo">
         <h1>Submissões em andamento</h1>
         <div className="acoes">
+          <Abrir rotulo="📄 Ler e-mail ou declaração" titulo="Ler e-mail, declaração ou carta da revista" classe="">
+            <LerDocumento publicacoes={todas} />
+          </Abrir>
           <a className="botao secundario" href="/relatorios/submissoes">Relatório de submissões</a>
           <a className="botao" href="/publicacoes/nova">+ Nova</a>
         </div>
